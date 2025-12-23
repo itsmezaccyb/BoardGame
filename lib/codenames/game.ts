@@ -155,11 +155,56 @@ export function resetRevealed(gameState: GameState): GameState {
 }
 
 /**
- * Load game state from localStorage
+ * Load game state from server
+ */
+export async function loadGameStateFromServer(code: string): Promise<GameState | null> {
+  try {
+    console.log(`🎮 [Game] Loading state from server: ${code}`);
+    const response = await fetch(`/api/codenames/game-sessions?code=${code}`);
+    const result = await response.json();
+
+    if (response.ok && result.session?.game_state) {
+      console.log(`✅ [Game] Loaded state from server: ${code}`);
+      return result.session.game_state as GameState;
+    }
+  } catch (error) {
+    console.error('Error loading game state from server:', error);
+  }
+
+  return null;
+}
+
+/**
+ * Save game state to server
+ */
+export async function saveGameStateToServer(gameState: GameState): Promise<void> {
+  try {
+    console.log(`💾 [Game] Saving state to server: ${gameState.code}`);
+    const response = await fetch(`/api/codenames/game-sessions?code=${gameState.code}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gameState: gameState,
+        status: 'active'
+      })
+    });
+
+    if (response.ok) {
+      console.log(`✅ [Game] Saved state to server: ${gameState.code}`);
+    } else {
+      console.error('❌ [Game] Failed to save state to server');
+    }
+  } catch (error) {
+    console.error('Error saving game state to server:', error);
+  }
+}
+
+/**
+ * Load game state from localStorage (fallback for compatibility)
  */
 export function loadGameStateFromStorage(code: string): GameState | null {
   if (typeof window === 'undefined') return null;
-  
+
   try {
     const stored = localStorage.getItem(`codenames-${code}`);
     if (stored) {
@@ -168,16 +213,16 @@ export function loadGameStateFromStorage(code: string): GameState | null {
   } catch (error) {
     console.error('Error loading game state from storage:', error);
   }
-  
+
   return null;
 }
 
 /**
- * Save game state to localStorage
+ * Save game state to localStorage (fallback for compatibility)
  */
 export function saveGameStateToStorage(gameState: GameState): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     localStorage.setItem(`codenames-${gameState.code}`, JSON.stringify(gameState));
   } catch (error) {

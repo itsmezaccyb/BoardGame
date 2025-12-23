@@ -18,16 +18,19 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Key images that are used in the application
+// Key images that are used in the application (excluding Catan images which stay local)
 const keyImages = [
-  'catan_woods.png',
-  'catan_sheep.png',
-  'catan_wheat.png',
-  'catan_rock.png',
-  'catan_brick.png',
-  'catan_desert.png',
-  'catan_water.png',
-  'catan_boat.png',
+  // Catan images stay local - commented out
+  // 'catan_woods.png',
+  // 'catan_sheep.png',
+  // 'catan_wheat.png',
+  // 'catan_rock.png',
+  // 'catan_brick.png',
+  // 'catan_desert.png',
+  // 'catan_water.png',
+  // 'catan_boat.png',
+
+  // Other game images
   'ticket_to_ride.jpg',
   'Wood.jpg'
 ];

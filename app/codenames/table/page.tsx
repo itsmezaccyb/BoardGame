@@ -10,8 +10,8 @@ import {
   createGameState,
   revealCard,
   resetRevealed,
-  saveGameStateToStorage,
-  loadGameStateFromStorage,
+  saveGameStateToServer,
+  loadGameStateFromServer,
   type GameState,
   type CardType,
 } from '@/lib/codenames/game';
@@ -45,9 +45,9 @@ export default function TableView() {
     const initializeGame = async () => {
       setLoading(true);
       try {
-        // Try to load existing state from storage
-        const storedState = loadGameStateFromStorage(code);
-        
+        // Try to load existing state from server
+        const storedState = await loadGameStateFromServer(code);
+
         if (storedState && storedState.mode === mode && storedState.variant === variant) {
           // Use stored state if it matches
           setGameState(storedState);
@@ -71,7 +71,7 @@ export default function TableView() {
 
         const state = createGameState(code, mode, variant, contents);
         setGameState(state);
-        saveGameStateToStorage(state);
+        await saveGameStateToServer(state);
       } catch (error) {
         console.error('Error initializing game:', error);
       } finally {
@@ -101,35 +101,35 @@ export default function TableView() {
     return () => window.removeEventListener('resize', updateWindowSize);
   }, []);
 
-  // Sync state to storage whenever it changes
+  // Sync state to server whenever it changes
   useEffect(() => {
     if (gameState) {
-      saveGameStateToStorage(gameState);
-      
-      // Also set up polling to check for updates from other views
-      const interval = setInterval(() => {
-        const storedState = loadGameStateFromStorage(code);
-        if (storedState && JSON.stringify(storedState.cards) !== JSON.stringify(gameState.cards)) {
-          setGameState(storedState);
+      saveGameStateToServer(gameState);
+
+      // Also set up polling to check for updates from other players
+      const interval = setInterval(async () => {
+        const serverState = await loadGameStateFromServer(code);
+        if (serverState && JSON.stringify(serverState.cards) !== JSON.stringify(gameState.cards)) {
+          setGameState(serverState);
         }
-      }, 500); // Check every 500ms
-      
+      }, 1000); // Check every 1 second
+
       return () => clearInterval(interval);
     }
   }, [gameState, code]);
 
-  const handleCardClick = (cardId: number) => {
+  const handleCardClick = async (cardId: number) => {
     if (!gameState) return;
     const newState = revealCard(gameState, cardId);
     setGameState(newState);
-    saveGameStateToStorage(newState);
+    await saveGameStateToServer(newState);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!gameState) return;
     const newState = resetRevealed(gameState);
     setGameState(newState);
-    saveGameStateToStorage(newState);
+    await saveGameStateToServer(newState);
   };
 
   const handleNewGame = () => {
@@ -164,9 +164,9 @@ export default function TableView() {
   const gap = inchesToPixels(0.2); // Gap between cards
   const cardSize = jumboView && windowSize.height > 0
     ? Math.min(
-        (windowSize.height - 120) / 5 - gap, // Use most of screen height minus padding
-        windowSize.width / 5 - gap // Don't exceed screen width
-      )
+      (windowSize.height - 120) / 5 - gap, // Use most of screen height minus padding
+      windowSize.width / 5 - gap // Don't exceed screen width
+    )
     : inchesToPixels(2.5); // Each card is 2.5 inches in normal view
   const gridSize = 5 * cardSize + 4 * gap;
 
@@ -189,16 +189,14 @@ export default function TableView() {
           <span className="font-semibold text-gray-900">Jumbo View</span>
           <button
             onClick={() => setJumboView(!jumboView)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              jumboView ? 'bg-green-600' : 'bg-gray-300'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${jumboView ? 'bg-green-600' : 'bg-gray-300'
+              }`}
             role="switch"
             aria-checked={jumboView}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                jumboView ? 'translate-x-6' : 'translate-x-1'
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${jumboView ? 'translate-x-6' : 'translate-x-1'
+                }`}
             />
           </button>
         </div>
@@ -207,16 +205,14 @@ export default function TableView() {
             <span className="font-semibold text-gray-900">Freeze GIFs</span>
             <button
               onClick={() => setGifsFrozen(!gifsFrozen)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                gifsFrozen ? 'bg-orange-600' : 'bg-gray-300'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${gifsFrozen ? 'bg-orange-600' : 'bg-gray-300'
+                }`}
               role="switch"
               aria-checked={gifsFrozen}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  gifsFrozen ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${gifsFrozen ? 'translate-x-6' : 'translate-x-1'
+                  }`}
               />
             </button>
           </div>

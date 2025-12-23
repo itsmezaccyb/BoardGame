@@ -8,8 +8,8 @@ import { loadWordList, selectWords } from '@/lib/codenames/words';
 import { loadImageList, selectImages } from '@/lib/codenames/images';
 import {
   createGameState,
-  loadGameStateFromStorage,
-  saveGameStateToStorage,
+  loadGameStateFromServer,
+  saveGameStateToServer,
   revealCard,
   type GameState,
   type CardType,
@@ -41,8 +41,8 @@ export default function SpymasterView() {
     const initializeGame = async () => {
       setLoading(true);
       try {
-        // Try to load existing state from storage
-        const storedState = loadGameStateFromStorage(code);
+        // Try to load existing state from server
+        const storedState = await loadGameStateFromServer(code);
         
         if (storedState && storedState.mode === mode && storedState.variant === variant) {
           // Use stored state if it matches
@@ -67,7 +67,7 @@ export default function SpymasterView() {
 
         const state = createGameState(code, mode, variant, contents);
         setGameState(state);
-        saveGameStateToStorage(state);
+        await saveGameStateToServer(state);
       } catch (error) {
         console.error('Error initializing game:', error);
       } finally {
@@ -78,16 +78,16 @@ export default function SpymasterView() {
     initializeGame();
   }, [code, mode, variant, router]);
 
-  // Sync state from storage to show revealed cards
+  // Sync state from server to show revealed cards
   useEffect(() => {
     if (gameState) {
-      const interval = setInterval(() => {
-        const storedState = loadGameStateFromStorage(code);
-        if (storedState && JSON.stringify(storedState.cards) !== JSON.stringify(gameState.cards)) {
-          setGameState(storedState);
+      const interval = setInterval(async () => {
+        const serverState = await loadGameStateFromServer(code);
+        if (serverState && JSON.stringify(serverState.cards) !== JSON.stringify(gameState.cards)) {
+          setGameState(serverState);
         }
-      }, 500); // Check every 500ms
-      
+      }, 1000); // Check every 1 second
+
       return () => clearInterval(interval);
     }
   }, [gameState, code]);
@@ -96,11 +96,11 @@ export default function SpymasterView() {
     router.push('/codenames');
   };
 
-  const handleRevealCard = (cardId: number) => {
+  const handleRevealCard = async (cardId: number) => {
     if (!gameState) return;
     const newState = revealCard(gameState, cardId);
     setGameState(newState);
-    saveGameStateToStorage(newState);
+    await saveGameStateToServer(newState);
   };
 
   if (loading) {

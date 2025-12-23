@@ -132,56 +132,189 @@ function SpymasterViewContent() {
   const gridSize = 5 * cardSize + 4 * gap;
 
   return (
-    <main className="h-screen w-screen flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: '#fafafa' }}>
-      <GameSettingsPanel>
-        {/* Game Info */}
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-600 mb-2">
-            Game Code: <span className="font-bold text-gray-900">{gameState.code}</span>
-          </p>
-          <p className="text-sm text-gray-600">
-            Starting Team: <span className="font-semibold" style={{ color: CARD_COLORS[gameState.startingTeam] }}>
-              {gameState.startingTeam.toUpperCase()}
-            </span>
+    <main className="h-screen w-screen flex flex-col" style={{ backgroundColor: '#fafafa' }}>
+      {/* Desktop View */}
+      <div className="hidden md:flex h-screen flex-col items-center justify-center overflow-hidden">
+        <GameSettingsPanel>
+          {/* Game Info */}
+          <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600 mb-2">
+              Game Code: <span className="font-bold text-gray-900">{gameState.code}</span>
+            </p>
+            <p className="text-sm text-gray-600">
+              Starting Team: <span className="font-semibold" style={{ color: CARD_COLORS[gameState.startingTeam] }}>
+                {gameState.startingTeam.toUpperCase()}
+              </span>
+            </p>
+          </div>
+          <button
+            onClick={handleNewGame}
+            className="w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors bg-gray-700 text-white hover:bg-gray-600 text-left"
+          >
+            New Game
+          </button>
+        </GameSettingsPanel>
+
+        {/* Key Card Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(5, ${cardSize}px)`,
+            gridTemplateRows: `repeat(5, ${cardSize}px)`,
+            gap: `${gap}px`,
+            width: `${gridSize}px`,
+            height: `${gridSize}px`,
+          }}
+        >
+          {gameState.cards.map((card) => (
+            <KeyCard
+              key={card.id}
+              card={card}
+              mode={mode}
+              size={cardSize}
+              onReveal={() => handleRevealCard(card.id)}
+            />
+          ))}
+        </div>
+
+        {/* Revealed Status */}
+        <div className="absolute bottom-8 left-8 right-8">
+          <p className="text-center text-gray-600">
+            Revealed: {gameState.cards.filter(c => c.revealed).length} / 25
           </p>
         </div>
-        <button
-          onClick={handleNewGame}
-          className="w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors bg-gray-700 text-white hover:bg-gray-600 text-left"
-        >
-          New Game
-        </button>
-      </GameSettingsPanel>
-
-      {/* Key Card Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(5, ${cardSize}px)`,
-          gridTemplateRows: `repeat(5, ${cardSize}px)`,
-          gap: `${gap}px`,
-          width: `${gridSize}px`,
-          height: `${gridSize}px`,
-        }}
-      >
-        {gameState.cards.map((card) => (
-          <KeyCard
-            key={card.id}
-            card={card}
-            mode={mode}
-            size={cardSize}
-            onReveal={() => handleRevealCard(card.id)}
-          />
-        ))}
       </div>
 
-      {/* Revealed Status */}
-      <div className="absolute bottom-8 left-8 right-8">
-        <p className="text-center text-gray-600">
-          Revealed: {gameState.cards.filter(c => c.revealed).length} / 25
-        </p>
+      {/* Mobile View */}
+      <div className="md:hidden flex flex-col h-screen">
+        {/* Game Info Header */}
+        <div className="px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-gray-600">
+                Code: <span className="font-bold text-gray-900">{gameState.code}</span>
+              </p>
+              <p className="text-sm text-gray-600">
+                Start: <span className="font-semibold" style={{ color: CARD_COLORS[gameState.startingTeam] }}>
+                  {gameState.startingTeam.toUpperCase()}
+                </span>
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-600">
+                Revealed: {gameState.cards.filter(c => c.revealed).length}/25
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Word List */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <div className="space-y-3">
+            {gameState.cards
+              .sort((a, b) => {
+                // Define color order: red, blue, neutral, assassin
+                const colorOrder = { red: 0, blue: 1, neutral: 2, assassin: 3 };
+                return colorOrder[a.type] - colorOrder[b.type];
+              })
+              .map((card) => (
+                <MobileWordItem
+                  key={card.id}
+                  card={card}
+                  mode={mode}
+                  onReveal={() => handleRevealCard(card.id)}
+                  cardColors={CARD_COLORS}
+                />
+              ))}
+          </div>
+        </div>
+
+        {/* Mobile Settings */}
+        <div className="bg-white border-t border-gray-200 p-4">
+          <button
+            onClick={handleNewGame}
+            className="w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors bg-gray-700 text-white hover:bg-gray-600"
+          >
+            New Game
+          </button>
+        </div>
       </div>
     </main>
+  );
+}
+
+interface MobileWordItemProps {
+  card: { id: number; content: string; type: CardType; revealed: boolean };
+  mode: 'word' | 'image';
+  onReveal: () => void;
+  cardColors: Record<CardType, string>;
+}
+
+function MobileWordItem({ card, mode, onReveal, cardColors }: MobileWordItemProps) {
+  const color = cardColors[card.type];
+  const isRevealed = card.revealed;
+
+  return (
+    <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="flex-1 flex items-center gap-3">
+        {/* Color indicator */}
+        <div
+          className="w-4 h-4 rounded-full flex-shrink-0"
+          style={{ backgroundColor: color }}
+        />
+
+        {/* Word/Image content */}
+        <div className="flex-1 min-w-0">
+          {mode === 'word' ? (
+            <span
+              className={`text-lg font-medium text-gray-900 ${isRevealed ? 'line-through text-gray-500' : ''}`}
+            >
+              {card.content}
+            </span>
+          ) : (
+            <div className="flex items-center gap-2">
+              <img
+                src={card.content}
+                alt=""
+                className={`w-12 h-12 rounded object-cover ${isRevealed ? 'opacity-50' : ''}`}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              <span
+                className={`text-sm text-gray-600 ${isRevealed ? 'line-through' : ''}`}
+              >
+                {card.content.split('/').pop()?.split('.')[0] || 'Image'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Type label */}
+        <div className="text-xs font-medium text-gray-500 uppercase">
+          {card.type}
+        </div>
+      </div>
+
+      {/* Reveal button */}
+      {!isRevealed && (
+        <button
+          onClick={onReveal}
+          className="ml-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Reveal
+        </button>
+      )}
+
+      {/* Revealed indicator */}
+      {isRevealed && (
+        <div className="ml-4 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { inchesToPixels } from '@/lib/dimensions';
 import { GameSettingsPanel } from '@/components/GameSettingsPanel';
@@ -22,7 +22,7 @@ const CARD_COLORS: Record<CardType, string> = {
   assassin: '#000000',
 };
 
-export default function SpymasterView() {
+function SpymasterViewContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -329,6 +329,18 @@ function KeyCard({ card, mode, size, onReveal }: KeyCardProps) {
         </button>
       )}
     </div>
+  );
+}
+
+export default function SpymasterView() {
+  return (
+    <Suspense fallback={
+      <main className="h-screen w-screen flex items-center justify-center" style={{ backgroundColor: '#fafafa' }}>
+        <p className="text-2xl text-gray-600">Loading game...</p>
+      </main>
+    }>
+      <SpymasterViewContent />
+    </Suspense>
   );
 }
 

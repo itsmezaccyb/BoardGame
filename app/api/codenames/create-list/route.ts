@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
                 console.log(`📝 [Create List API] Adding ${words.length} words to list`);
 
                 // Validate and deduplicate words
-                const uniqueWords = [...new Set(words.map(w => w.toLowerCase().trim()))]
+                const uniqueWords = Array.from(new Set(words.map(w => w.toLowerCase().trim())))
                     .filter(word => word.length > 0);
 
                 if (uniqueWords.length > 0) {

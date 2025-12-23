@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { inchesToPixels } from '@/lib/dimensions';
 import { InteractiveGameSettingsPanel } from '@/components/InteractiveGameSettingsPanel';
@@ -23,7 +23,7 @@ const CARD_COLORS: Record<CardType, string> = {
   assassin: '#000000',
 };
 
-export default function TableView() {
+function TableViewContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -387,6 +387,18 @@ function Card({ card, mode, size, gifsFrozen, onClick }: CardProps) {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TableView() {
+  return (
+    <Suspense fallback={
+      <main className="h-screen w-screen flex items-center justify-center" style={{ backgroundColor: '#fafafa' }}>
+        <p className="text-2xl text-gray-600">Loading game...</p>
+      </main>
+    }>
+      <TableViewContent />
+    </Suspense>
   );
 }
 

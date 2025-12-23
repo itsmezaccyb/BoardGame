@@ -826,7 +826,7 @@ export default function CodenamesPage() {
                                         {selectedListType === 'word' ? (
                                             <div>
                                                 <h4 className="text-xl font-semibold text-gray-800 mb-4">
-                                                    Words in "{wordLists.find(l => l.filename === selectedList)?.name}"
+                                                    Words in &quot;{wordLists.find(l => l.filename === selectedList)?.name}&quot;
                                                 </h4>
 
                                                 {isLoading ? (
@@ -938,7 +938,7 @@ export default function CodenamesPage() {
                                         ) : (
                                             <div>
                                                 <h4 className="text-xl font-semibold text-gray-800 mb-4">
-                                                    Images in "{imageLists.find(l => l.folder === selectedList)?.name}"
+                                                    Images in &quot;{imageLists.find(l => l.folder === selectedList)?.name}&quot;
                                                 </h4>
 
                                                 {isLoading ? (

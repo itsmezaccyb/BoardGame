@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
           try {
             const arrayBuffer = await file.arrayBuffer();
             const convertedBuffer = await heicConvert({
-              buffer: Buffer.from(arrayBuffer),
+              buffer: arrayBuffer as any,
               format: 'JPEG',
               quality: 0.9
             });
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
             });
             console.log(`✅ [Upload API] Converted ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB`);
           } catch (error) {
-            console.warn(`⚠️ [Upload API] Failed to convert HEIC ${file.name}:`, error.message);
+            console.warn(`⚠️ [Upload API] Failed to convert HEIC ${file.name}:`, error);
             continue;
           }
         }

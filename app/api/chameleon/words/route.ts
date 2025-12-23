@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/chameleon/words?variant=<filename> - Get words from database for a variant
 export async function GET(request: NextRequest) {
   try {

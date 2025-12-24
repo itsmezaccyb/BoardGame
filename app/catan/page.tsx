@@ -324,6 +324,7 @@ export default function CatanPage() {
     const perimeterPoints = useMemo(() => {
         const points: { x: number; y: number }[] = [];
 
+
         if (playerCount === 4) {
             // 4-player board: rows [3, 4, 5, 4, 3]
 
@@ -616,7 +617,7 @@ export default function CatanPage() {
 
                 {/* Port ships - separated for proper z-index control */}
                 {playerCount === '5-6' && perimeterPoints.length > 0 && (
-                    <div style={{ position: 'absolute', inset: 0, zIndex: 5, pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                         {[[2, 3], [7, 8], [10, 11], [14, 15], [19, 20], [22, 23], [25, 26], [28, 29], [31, 32], [34, 35], [38, 0]].map((pair, idx) => {
                             const p1 = perimeterPoints[pair[0]];
                             const p2 = perimeterPoints[pair[1]];
@@ -628,7 +629,7 @@ export default function CatanPage() {
                             const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI) + 180;
 
                             const portType = generatePortAssignments[idx];
-                            const boatImage = getImageUrl(`/images/catan_boat_${portType}.png`);
+                            const boatImage = `/images/catan_boat_${portType}.png`; // Direct path for testing
                             const portSize = hexWidth * 1.4;
                             const portOffset = portSize / 2;
 
@@ -641,21 +642,29 @@ export default function CatanPage() {
                                         top: `${midY - portOffset}px`,
                                         width: `${portSize}px`,
                                         height: `${portSize}px`,
-                                        backgroundImage: `url(${boatImage})`,
-                                        backgroundSize: 'contain',
-                                        backgroundRepeat: 'no-repeat',
-                                        backgroundPosition: 'center',
                                         transform: `rotate(${angle}deg)`,
                                         transformOrigin: 'center',
                                     }}
-                                />
+                                >
+                                    <img
+                                        src={boatImage}
+                                        alt={`Port ${portType}`}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'contain',
+                                            pointerEvents: 'none',
+                                        }}
+                                    />
+                                </div>
                             );
                         })}
                     </div>
                 )}
 
+                {/* For 4-player */}
                 {playerCount === 4 && perimeterPoints.length > 0 && (
-                    <div style={{ position: 'absolute', inset: 0, zIndex: 5, pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                         {[[0, 1], [3, 4], [7, 8], [10, 11], [13, 14], [17, 18], [20, 21], [23, 24], [27, 28]].map((pair, idx) => {
                             const p1 = perimeterPoints[pair[0]];
                             const p2 = perimeterPoints[pair[1]];
@@ -667,7 +676,7 @@ export default function CatanPage() {
                             const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI) + 180;
 
                             const portType = generatePortAssignments[idx];
-                            const boatImage = getImageUrl(`/images/catan_boat_${portType}.png`);
+                            const boatImage = `/images/catan_boat_${portType}.png`; // Direct path for testing
                             const portSize = hexWidth * 1.4;
                             const portOffset = portSize / 2;
 
@@ -680,14 +689,21 @@ export default function CatanPage() {
                                         top: `${midY - portOffset}px`,
                                         width: `${portSize}px`,
                                         height: `${portSize}px`,
-                                        backgroundImage: `url(${boatImage})`,
-                                        backgroundSize: 'contain',
-                                        backgroundRepeat: 'no-repeat',
-                                        backgroundPosition: 'center',
                                         transform: `rotate(${angle}deg)`,
                                         transformOrigin: 'center',
                                     }}
-                                />
+                                >
+                                    <img
+                                        src={boatImage}
+                                        alt={`Port ${portType}`}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'contain',
+                                            pointerEvents: 'none',
+                                        }}
+                                    />
+                                </div>
                             );
                         })}
                     </div>

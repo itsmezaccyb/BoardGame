@@ -598,15 +598,6 @@ export default function ChameleonPage() {
             <div className="text-center">
               <h3 className="text-2xl font-bold text-gray-800 mb-2">Manage Lists & Upload</h3>
               <p className="text-gray-600">Edit word lists, manage images, and upload new content</p>
-              <button
-                onClick={() => {
-                  getWordLists().then(setWordLists);
-                  getImageLists().then(setImageLists);
-                }}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-              >
-                🔄 Refresh Lists
-              </button>
             </div>
 
             {/* Sub-tabs */}

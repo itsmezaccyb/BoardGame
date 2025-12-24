@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/chameleon/manage-images?listId=<uuid> - Fetch images for a specific list
+// GET /api/chameleon/manage-images?listId=<folder> - Fetch images for a specific list
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -15,11 +15,23 @@ export async function GET(request: NextRequest) {
 
     console.log(`🖼️ [Manage Images API] Loading images for list: ${listId}`);
 
+    // First get the image list by folder to get its ID
+    const { data: imageList, error: listError } = await supabase
+      .from('chameleon_image_lists')
+      .select('id')
+      .eq('folder', listId)
+      .single();
+
+    if (listError) {
+      console.error('❌ [Manage Images API] Image list not found:', listError);
+      return NextResponse.json({ error: 'Image list not found' }, { status: 404 });
+    }
+
     const { data: images, error } = await supabase
       .from('chameleon_images')
-      .select('id, image_path, original_filename')
-      .eq('image_list_id', listId)
-      .order('original_filename', { ascending: true });
+      .select('id, image_path, original_filename, file_size, mime_type, created_at, uploaded_at')
+      .eq('image_list_id', imageList.id)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('❌ [Manage Images API] Database error:', error);
@@ -34,7 +46,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// DELETE /api/chameleon/manage-images?listId=<uuid>&imageId=<uuid> - Remove image from list
+// DELETE /api/chameleon/manage-images?listId=<folder>&imageId=<uuid> - Remove image from list
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -42,59 +54,60 @@ export async function DELETE(request: NextRequest) {
     const imageId = searchParams.get('imageId');
 
     if (!listId || !imageId) {
-      console.error('❌ [Manage Images API] Missing parameters - listId:', listId, 'imageId:', imageId);
       return NextResponse.json({ error: 'listId and imageId parameters are required' }, { status: 400 });
     }
 
-    console.log(`🗑️ [Manage Images API] Deleting image: ${imageId} from list: ${listId}`);
+    console.log(`🗑️ [Manage Images API] Removing image ${imageId} from list: ${listId}`);
 
-    // First, get the image path to delete from storage
-    const { data: imageData, error: fetchError } = await supabase
-      .from('chameleon_images')
-      .select('id, image_path, original_filename')
-      .eq('id', imageId)
-      .eq('image_list_id', listId)
+    // Get the image list by folder to get its ID
+    const { data: imageList, error: listError } = await supabase
+      .from('chameleon_image_lists')
+      .select('id')
+      .eq('folder', listId)
       .single();
 
-    if (fetchError || !imageData) {
-      console.error('❌ [Manage Images API] Failed to fetch image:', fetchError);
-      return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+    if (listError) {
+      console.error('❌ [Manage Images API] Image list not found:', listError);
+      return NextResponse.json({ error: 'Image list not found' }, { status: 404 });
     }
 
-    console.log(`📷 [Manage Images API] Found image to delete:`, imageData);
+    // First get the image path so we can delete from storage
+    const { data: image, error: fetchError } = await supabase
+      .from('chameleon_images')
+      .select('image_path')
+      .eq('id', imageId)
+      .eq('image_list_id', imageList.id)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ [Manage Images API] Fetch error:', fetchError);
+      return NextResponse.json({ error: 'Failed to find image' }, { status: 404 });
+    }
+
+    // Delete from storage
+    console.log(`🗂️ [Manage Images API] Deleting from storage: ${image.image_path}`);
+    const { error: storageError } = await supabase.storage
+      .from('chameleon-images')
+      .remove([image.image_path]);
+
+    if (storageError) {
+      console.error('❌ [Manage Images API] Storage delete error:', storageError);
+      // Continue with database deletion even if storage deletion fails
+    }
 
     // Delete from database
-    const { error: deleteError } = await supabase
+    const { error: dbError } = await supabase
       .from('chameleon_images')
       .delete()
       .eq('id', imageId)
-      .eq('image_list_id', listId);
+      .eq('image_list_id', imageList.id); // Extra safety check
 
-    if (deleteError) {
-      console.error('❌ [Manage Images API] Delete error:', deleteError);
-      return NextResponse.json({ error: 'Failed to remove image' }, { status: 500 });
+    if (dbError) {
+      console.error('❌ [Manage Images API] Database delete error:', dbError);
+      return NextResponse.json({ error: 'Failed to remove image from database' }, { status: 500 });
     }
 
-    console.log(`✅ [Manage Images API] Deleted from database: ${imageId}`);
-
-    // Try to delete from storage (non-blocking)
-    if (imageData?.image_path) {
-      try {
-        const url = new URL(imageData.image_path);
-        const pathParts = url.pathname.split('/');
-        const bucketIndex = pathParts.indexOf('chameleon-images');
-        if (bucketIndex !== -1) {
-          const filePath = pathParts.slice(bucketIndex + 1).join('/');
-          console.log(`🗑️ [Manage Images API] Attempting to delete file from storage: ${filePath}`);
-          await supabase.storage.from('chameleon-images').remove([filePath]);
-          console.log(`✅ [Manage Images API] Deleted file from storage: ${filePath}`);
-        }
-      } catch (error) {
-        console.warn('⚠️ [Manage Images API] Could not delete file from storage (non-blocking):', error);
-      }
-    }
-
-    console.log(`✅ [Manage Images API] Successfully removed image: ${imageId}`);
+    console.log(`✅ [Manage Images API] Removed image ${imageId}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('💥 [Manage Images API] Unexpected error:', error);

@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function Home() {
     return (
-        <main className="h-screen w-screen bg-white flex flex-col items-center justify-start pt-16 overflow-hidden">
+        <main className="min-h-screen w-screen bg-white flex flex-col items-center justify-start pt-16 overflow-y-auto">
             <h1 className="text-6xl font-bold text-gray-900 mb-16">Games</h1>
 
             <div className="grid grid-cols-2 gap-8 max-w-4xl">

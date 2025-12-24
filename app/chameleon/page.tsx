@@ -247,15 +247,10 @@ export default function ChameleonPage() {
   };
 
   const removeWord = async (wordId: string) => {
-    if (
-      !selectedList ||
-      selectedListType !== 'word' ||
-      !confirm('Are you sure you want to remove this word?')
-    )
-      return;
+    if (!selectedList || selectedListType !== 'word') return;
 
     try {
-      console.log(`🗑️ [Frontend] Removing word: ${wordId}`);
+      console.log(`🗑️ [Frontend] Removing word: ${wordId} from list: ${selectedList}`);
       const response = await fetch(
         `/api/chameleon/manage-words?listId=${selectedList}&wordId=${wordId}`,
         {
@@ -263,18 +258,18 @@ export default function ChameleonPage() {
         }
       );
 
+      console.log(`📡 [Frontend] Response status: ${response.status}`);
       const result = await response.json();
+      console.log(`📡 [Frontend] Response body:`, result);
 
       if (response.ok) {
-        setWordListWords((prev) => prev.filter((word) => word.id !== wordId));
+        setWordListWords((prev) => prev.filter((w) => w.id !== wordId));
         console.log(`✅ [Frontend] Removed word: ${wordId}`);
       } else {
         console.error('❌ [Frontend] Failed to remove word:', result.error);
-        alert(`Failed to remove word: ${result.error}`);
       }
     } catch (error) {
       console.error('💥 [Frontend] Error removing word:', error);
-      alert('Failed to remove word');
     }
   };
 
@@ -301,15 +296,10 @@ export default function ChameleonPage() {
   };
 
   const removeImage = async (imageId: string) => {
-    if (
-      !selectedList ||
-      selectedListType !== 'image' ||
-      !confirm('Are you sure you want to remove this image? This action cannot be undone.')
-    )
-      return;
+    if (!selectedList || selectedListType !== 'image') return;
 
     try {
-      console.log(`🗑️ [Frontend] Removing image: ${imageId}`);
+      console.log(`🗑️ [Frontend] Removing image: ${imageId} from list: ${selectedList}`);
       const response = await fetch(
         `/api/chameleon/manage-images?listId=${selectedList}&imageId=${imageId}`,
         {
@@ -317,18 +307,18 @@ export default function ChameleonPage() {
         }
       );
 
+      console.log(`📡 [Frontend] Response status: ${response.status}`);
       const result = await response.json();
+      console.log(`📡 [Frontend] Response body:`, result);
 
       if (response.ok) {
         setImageListImages((prev) => prev.filter((img) => img.id !== imageId));
         console.log(`✅ [Frontend] Removed image: ${imageId}`);
       } else {
         console.error('❌ [Frontend] Failed to remove image:', result.error);
-        alert(`Failed to remove image: ${result.error}`);
       }
     } catch (error) {
       console.error('💥 [Frontend] Error removing image:', error);
-      alert('Failed to remove image');
     }
   };
 
@@ -724,7 +714,7 @@ export default function ChameleonPage() {
                               <div className="flex gap-2 mb-4">
                                 <input
                                   type="text"
-                                  value={newWord}
+                                  value={newWord.toUpperCase()}
                                   onChange={(e) => setNewWord(e.target.value)}
                                   placeholder="Enter a new word"
                                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
@@ -741,7 +731,7 @@ export default function ChameleonPage() {
                             ) : (
                               <div className="mb-4">
                                 <textarea
-                                  value={bulkAddWords}
+                                  value={bulkAddWords.toUpperCase()}
                                   onChange={(e) => setBulkAddWords(e.target.value)}
                                   placeholder="Paste words separated by commas"
                                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -767,7 +757,7 @@ export default function ChameleonPage() {
                                 <ul className="divide-y divide-gray-200">
                                   {wordListWords.map((word) => (
                                     <li key={word.id} className="flex justify-between items-center px-4 py-3">
-                                      <span className="text-gray-800">{word.word}</span>
+                                      <span className="text-gray-800">{word.word.toUpperCase()}</span>
                                       <button
                                         onClick={() => removeWord(word.id)}
                                         className="text-red-600 hover:text-red-800 p-1"

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/chameleon/upload-images - Upload images to a group
 export async function POST(request: NextRequest) {
   try {

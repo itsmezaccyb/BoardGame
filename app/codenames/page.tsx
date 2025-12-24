@@ -235,7 +235,7 @@ export default function CodenamesPage() {
     };
 
     const removeWord = async (wordId: string) => {
-        if (!selectedList || selectedListType !== 'word' || !confirm('Are you sure you want to remove this word?')) return;
+        if (!selectedList || selectedListType !== 'word') return;
 
         try {
             console.log(`🗑️ [Frontend] Removing word: ${wordId}`);
@@ -251,10 +251,14 @@ export default function CodenamesPage() {
             } else {
                 console.error('❌ [Frontend] Failed to remove word:', result.error);
                 alert(`Failed to remove word: ${result.error}`);
+                // Reload the list to show current state
+                loadListContent(selectedList, 'word');
             }
         } catch (error) {
             console.error('💥 [Frontend] Error removing word:', error);
             alert('Failed to remove word');
+            // Reload the list to show current state
+            loadListContent(selectedList, 'word');
         }
     };
 
@@ -292,7 +296,7 @@ export default function CodenamesPage() {
     ];
 
     const removeImage = async (imageId: string) => {
-        if (!selectedList || selectedListType !== 'image' || !confirm('Are you sure you want to remove this image? This action cannot be undone.')) return;
+        if (!selectedList || selectedListType !== 'image') return;
 
         try {
             console.log(`🗑️ [Frontend] Removing image: ${imageId}`);
@@ -308,10 +312,14 @@ export default function CodenamesPage() {
             } else {
                 console.error('❌ [Frontend] Failed to remove image:', result.error);
                 alert(`Failed to remove image: ${result.error}`);
+                // Reload the list to show current state
+                loadListContent(selectedList, 'image');
             }
         } catch (error) {
             console.error('💥 [Frontend] Error removing image:', error);
             alert('Failed to remove image');
+            // Reload the list to show current state
+            loadListContent(selectedList, 'image');
         }
     };
 
@@ -913,7 +921,7 @@ export default function CodenamesPage() {
                                                                 <ul className="divide-y divide-gray-200">
                                                                     {wordListWords.map((word) => (
                                                                         <li key={word.id} className="flex justify-between items-center px-4 py-3">
-                                                                            <span className="text-gray-800">{word.word}</span>
+                                                                            <span className="text-gray-800">{word.word.toUpperCase()}</span>
                                                                             <button
                                                                                 onClick={() => removeWord(word.id)}
                                                                                 className="text-red-600 hover:text-red-800 p-1"

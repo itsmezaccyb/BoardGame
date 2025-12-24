@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/chameleon/manage-images?listId=<uuid> - Fetch images for a specific list
 export async function GET(request: NextRequest) {
   try {
@@ -40,23 +42,26 @@ export async function DELETE(request: NextRequest) {
     const imageId = searchParams.get('imageId');
 
     if (!listId || !imageId) {
+      console.error('❌ [Manage Images API] Missing parameters - listId:', listId, 'imageId:', imageId);
       return NextResponse.json({ error: 'listId and imageId parameters are required' }, { status: 400 });
     }
 
-    console.log(`🗑️ [Manage Images API] Removing image: ${imageId}`);
+    console.log(`🗑️ [Manage Images API] Deleting image: ${imageId} from list: ${listId}`);
 
     // First, get the image path to delete from storage
     const { data: imageData, error: fetchError } = await supabase
       .from('chameleon_images')
-      .select('image_path')
+      .select('id, image_path, original_filename')
       .eq('id', imageId)
       .eq('image_list_id', listId)
       .single();
 
-    if (fetchError) {
+    if (fetchError || !imageData) {
       console.error('❌ [Manage Images API] Failed to fetch image:', fetchError);
       return NextResponse.json({ error: 'Image not found' }, { status: 404 });
     }
+
+    console.log(`📷 [Manage Images API] Found image to delete:`, imageData);
 
     // Delete from database
     const { error: deleteError } = await supabase
@@ -70,24 +75,26 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to remove image' }, { status: 500 });
     }
 
+    console.log(`✅ [Manage Images API] Deleted from database: ${imageId}`);
+
     // Try to delete from storage (non-blocking)
     if (imageData?.image_path) {
-      // Extract bucket and path from full URL or path
       try {
         const url = new URL(imageData.image_path);
         const pathParts = url.pathname.split('/');
         const bucketIndex = pathParts.indexOf('chameleon-images');
         if (bucketIndex !== -1) {
           const filePath = pathParts.slice(bucketIndex + 1).join('/');
+          console.log(`🗑️ [Manage Images API] Attempting to delete file from storage: ${filePath}`);
           await supabase.storage.from('chameleon-images').remove([filePath]);
           console.log(`✅ [Manage Images API] Deleted file from storage: ${filePath}`);
         }
       } catch (error) {
-        console.warn('⚠️ [Manage Images API] Could not delete file from storage (non-blocking)');
+        console.warn('⚠️ [Manage Images API] Could not delete file from storage (non-blocking):', error);
       }
     }
 
-    console.log(`✅ [Manage Images API] Removed image: ${imageId}`);
+    console.log(`✅ [Manage Images API] Successfully removed image: ${imageId}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('💥 [Manage Images API] Unexpected error:', error);

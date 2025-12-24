@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { randomUUID } from 'crypto';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/chameleon/players?code=<session_code> - Get all players in session
 export async function GET(request: NextRequest) {
   try {

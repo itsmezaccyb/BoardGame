@@ -194,7 +194,7 @@ export function ChameleonPlayerContent() {
               ) : (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">Your Word:</p>
-                  <p className="text-6xl font-bold text-blue-700">{secretWord}</p>
+                  <p className="text-6xl font-bold text-blue-700">{secretWord?.toUpperCase()}</p>
                 </div>
               )}
             </div>

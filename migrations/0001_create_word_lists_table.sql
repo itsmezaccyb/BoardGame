@@ -33,8 +33,14 @@ ALTER TABLE words ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access to word_lists" ON word_lists
   FOR SELECT USING (true);
 
+CREATE POLICY "Allow public write access to word_lists" ON word_lists
+  FOR ALL USING (true);
+
 CREATE POLICY "Allow public read access to words" ON words
   FOR SELECT USING (true);
+
+CREATE POLICY "Allow public write access to words" ON words
+  FOR ALL USING (true);
 
 -- Insert the default/standard word list
 INSERT INTO word_lists (name, filename, description, is_default)

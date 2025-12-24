@@ -8,6 +8,8 @@ import {
   type Player,
 } from '@/lib/chameleon/game';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/chameleon/start-round - Start new round
 export async function POST(request: NextRequest) {
   try {

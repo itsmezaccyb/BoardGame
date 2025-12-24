@@ -211,21 +211,15 @@ function SpymasterViewContent() {
         {/* Word List */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <div className="space-y-3">
-            {gameState.cards
-              .sort((a, b) => {
-                // Define color order: red, blue, neutral, assassin
-                const colorOrder = { red: 0, blue: 1, neutral: 2, assassin: 3 };
-                return colorOrder[a.type] - colorOrder[b.type];
-              })
-              .map((card) => (
-                <MobileWordItem
-                  key={card.id}
-                  card={card}
-                  mode={mode}
-                  onReveal={() => handleRevealCard(card.id)}
-                  cardColors={CARD_COLORS}
-                />
-              ))}
+            {gameState.cards.map((card) => (
+              <MobileWordItem
+                key={card.id}
+                card={card}
+                mode={mode}
+                onReveal={() => handleRevealCard(card.id)}
+                cardColors={CARD_COLORS}
+              />
+            ))}
           </div>
         </div>
 
@@ -269,7 +263,7 @@ function MobileWordItem({ card, mode, onReveal, cardColors }: MobileWordItemProp
             <span
               className={`text-lg font-medium text-gray-900 ${isRevealed ? 'line-through text-gray-500' : ''}`}
             >
-              {card.content}
+              {card.content.toUpperCase()}
             </span>
           ) : (
             <div className="flex items-center gap-2">

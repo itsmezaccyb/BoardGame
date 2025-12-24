@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/chameleon/manage-words?listId=<uuid> - Fetch words for a specific list
 export async function GET(request: NextRequest) {
   try {
@@ -88,10 +90,26 @@ export async function DELETE(request: NextRequest) {
     const wordId = searchParams.get('wordId');
 
     if (!listId || !wordId) {
+      console.error('❌ [Manage Words API] Missing parameters - listId:', listId, 'wordId:', wordId);
       return NextResponse.json({ error: 'listId and wordId parameters are required' }, { status: 400 });
     }
 
-    console.log(`🗑️ [Manage Words API] Removing word: ${wordId}`);
+    console.log(`🗑️ [Manage Words API] Deleting word: ${wordId} from list: ${listId}`);
+
+    // First verify the word exists
+    const { data: existingWord, error: checkError } = await supabase
+      .from('chameleon_words')
+      .select('id, word')
+      .eq('id', wordId)
+      .eq('word_list_id', listId)
+      .single();
+
+    if (checkError || !existingWord) {
+      console.error('❌ [Manage Words API] Word not found:', checkError);
+      return NextResponse.json({ error: 'Word not found' }, { status: 404 });
+    }
+
+    console.log(`📋 [Manage Words API] Found word to delete:`, existingWord);
 
     const { error } = await supabase
       .from('chameleon_words')
@@ -104,7 +122,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to remove word' }, { status: 500 });
     }
 
-    console.log(`✅ [Manage Words API] Removed word: ${wordId}`);
+    console.log(`✅ [Manage Words API] Successfully deleted word: ${wordId}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('💥 [Manage Words API] Unexpected error:', error);

@@ -33,8 +33,14 @@ ALTER TABLE images ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access to image_lists" ON image_lists
   FOR SELECT USING (true);
 
+CREATE POLICY "Allow public write access to image_lists" ON image_lists
+  FOR ALL USING (true);
+
 CREATE POLICY "Allow public read access to images" ON images
   FOR SELECT USING (true);
+
+CREATE POLICY "Allow public write access to images" ON images
+  FOR ALL USING (true);
 
 -- Insert the default/sam image list
 INSERT INTO image_lists (name, folder, description, is_default)

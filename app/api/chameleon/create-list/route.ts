@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/chameleon/create-list - Create new word or image list
 export async function POST(request: NextRequest) {
   try {

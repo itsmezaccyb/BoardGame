@@ -325,7 +325,7 @@ function Card({ card, mode, size, gifsFrozen, onClick }: CardProps) {
             zIndex: 2,
           }}
         >
-          {card.content}
+          {mode === 'word' ? card.content.toUpperCase() : card.content}
         </span>
       ) : (
         <>

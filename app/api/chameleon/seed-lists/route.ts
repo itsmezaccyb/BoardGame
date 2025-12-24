@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/chameleon/seed-lists - Seed default lists (admin only)
 export async function POST(request: NextRequest) {
   try {

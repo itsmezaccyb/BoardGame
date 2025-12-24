@@ -39,7 +39,7 @@ export default function ChameleonGrid({ items, mode, size = 150 }: ChameleonGrid
         >
           {mode === 'word' ? (
             <p className="text-center font-semibold text-gray-800 text-sm line-clamp-3">
-              {item}
+              {item.toUpperCase()}
             </p>
           ) : (
             <img

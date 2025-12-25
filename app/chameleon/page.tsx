@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getWordLists, type WordListInfo } from '@/lib/chameleon/words';
 import { getImageLists, type ImageListInfo } from '@/lib/chameleon/images';
 import { generateGameCode } from '@/lib/chameleon/game';
@@ -447,32 +448,38 @@ export default function ChameleonPage() {
 
   return (
     <main className="h-screen w-screen flex flex-col items-center py-8 overflow-y-auto" style={{ backgroundColor: '#fafafa' }}>
-      <h1 className="text-6xl font-bold text-gray-900 mb-12">Chameleon</h1>
+      <div className="w-full max-w-4xl px-8 mb-8 flex justify-between items-center">
+        <Link
+          href="/"
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-semibold"
+        >
+          Home
+        </Link>
+        <h1 className="text-6xl font-bold text-gray-900">Chameleon</h1>
+        <div className="w-20"></div> {/* Spacer for centering */}
+      </div>
 
       <div className="w-full max-w-4xl px-8 pb-8">
         {/* Tab Selection */}
         <div className="flex gap-4 mb-8">
           <button
             onClick={() => setActiveTab('join')}
-            className={`flex-1 px-8 py-4 rounded-t-lg font-semibold text-xl transition-colors ${
-              activeTab === 'join' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-            }`}
+            className={`flex-1 px-8 py-4 rounded-t-lg font-semibold text-xl transition-colors ${activeTab === 'join' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
           >
             Join Game
           </button>
           <button
             onClick={() => setActiveTab('create')}
-            className={`flex-1 px-8 py-4 rounded-t-lg font-semibold text-xl transition-colors ${
-              activeTab === 'create' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-            }`}
+            className={`flex-1 px-8 py-4 rounded-t-lg font-semibold text-xl transition-colors ${activeTab === 'create' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
           >
             Create Game
           </button>
           <button
             onClick={() => setActiveTab('manage')}
-            className={`flex-1 px-8 py-4 rounded-t-lg font-semibold text-xl transition-colors ${
-              activeTab === 'manage' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-            }`}
+            className={`flex-1 px-8 py-4 rounded-t-lg font-semibold text-xl transition-colors ${activeTab === 'manage' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
           >
             Manage Lists
           </button>
@@ -507,9 +514,8 @@ export default function ChameleonPage() {
             <button
               onClick={handleJoin}
               disabled={!canJoin}
-              className={`px-8 py-4 rounded-lg font-semibold text-xl transition-colors ${
-                canJoin ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+              className={`px-8 py-4 rounded-lg font-semibold text-xl transition-colors ${canJoin ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
             >
               Join Game
             </button>
@@ -532,11 +538,10 @@ export default function ChameleonPage() {
                     setCreateMode('word');
                     setCreateVariant('');
                   }}
-                  className={`flex-1 px-8 py-4 rounded-lg font-semibold text-lg transition-colors ${
-                    createMode === 'word'
+                  className={`flex-1 px-8 py-4 rounded-lg font-semibold text-lg transition-colors ${createMode === 'word'
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  }`}
+                    }`}
                 >
                   Words
                 </button>
@@ -545,11 +550,10 @@ export default function ChameleonPage() {
                     setCreateMode('image');
                     setCreateVariant('');
                   }}
-                  className={`flex-1 px-8 py-4 rounded-lg font-semibold text-lg transition-colors ${
-                    createMode === 'image'
+                  className={`flex-1 px-8 py-4 rounded-lg font-semibold text-lg transition-colors ${createMode === 'image'
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  }`}
+                    }`}
                 >
                   Images
                 </button>
@@ -583,9 +587,8 @@ export default function ChameleonPage() {
             <button
               onClick={handleCreate}
               disabled={!createVariant}
-              className={`px-8 py-4 rounded-lg font-semibold text-xl transition-colors ${
-                createVariant ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+              className={`px-8 py-4 rounded-lg font-semibold text-xl transition-colors ${createVariant ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
             >
               Create Display Board
             </button>
@@ -604,31 +607,28 @@ export default function ChameleonPage() {
             <div className="flex gap-4 justify-center">
               <button
                 onClick={() => setManageSubTab('lists')}
-                className={`px-6 py-3 rounded-lg font-semibold text-lg transition-colors ${
-                  manageSubTab === 'lists'
+                className={`px-6 py-3 rounded-lg font-semibold text-lg transition-colors ${manageSubTab === 'lists'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                }`}
+                  }`}
               >
                 Manage Lists
               </button>
               <button
                 onClick={() => setManageSubTab('create')}
-                className={`px-6 py-3 rounded-lg font-semibold text-lg transition-colors ${
-                  manageSubTab === 'create'
+                className={`px-6 py-3 rounded-lg font-semibold text-lg transition-colors ${manageSubTab === 'create'
                     ? 'bg-purple-600 text-white'
                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                }`}
+                  }`}
               >
                 Create List
               </button>
               <button
                 onClick={() => setManageSubTab('upload')}
-                className={`px-6 py-3 rounded-lg font-semibold text-lg transition-colors ${
-                  manageSubTab === 'upload'
+                className={`px-6 py-3 rounded-lg font-semibold text-lg transition-colors ${manageSubTab === 'upload'
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                }`}
+                  }`}
               >
                 Upload Images
               </button>
@@ -680,21 +680,19 @@ export default function ChameleonPage() {
                             <div className="flex gap-2 mb-4">
                               <button
                                 onClick={() => setIsBulkMode(false)}
-                                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                  !isBulkMode
+                                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${!isBulkMode
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                                }`}
+                                  }`}
                               >
                                 Single Word
                               </button>
                               <button
                                 onClick={() => setIsBulkMode(true)}
-                                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                  isBulkMode
+                                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isBulkMode
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                                }`}
+                                  }`}
                               >
                                 Bulk Add
                               </button>
@@ -825,21 +823,19 @@ export default function ChameleonPage() {
                   <div className="flex gap-4">
                     <button
                       onClick={() => setCreateListType('word')}
-                      className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${
-                        createListType === 'word'
+                      className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${createListType === 'word'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      }`}
+                        }`}
                     >
                       📝 Word List
                     </button>
                     <button
                       onClick={() => setCreateListType('image')}
-                      className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${
-                        createListType === 'image'
+                      className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${createListType === 'image'
                           ? 'bg-green-600 text-white'
                           : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      }`}
+                        }`}
                     >
                       🖼️ Image List
                     </button>
@@ -875,11 +871,10 @@ export default function ChameleonPage() {
                 <button
                   onClick={createNewList}
                   disabled={!newListName.trim() || isCreating}
-                  className={`px-8 py-4 rounded-lg font-semibold text-xl transition-colors mt-6 ${
-                    newListName.trim() && !isCreating
+                  className={`px-8 py-4 rounded-lg font-semibold text-xl transition-colors mt-6 ${newListName.trim() && !isCreating
                       ? 'bg-purple-600 text-white hover:bg-purple-700'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   {isCreating ? 'Creating...' : `Create ${createListType === 'word' ? 'Word' : 'Image'} List`}
                 </button>
@@ -898,21 +893,19 @@ export default function ChameleonPage() {
                   <div className="flex gap-4">
                     <button
                       onClick={() => setUploadMode('new')}
-                      className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${
-                        uploadMode === 'new'
+                      className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${uploadMode === 'new'
                           ? 'bg-green-600 text-white'
                           : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      }`}
+                        }`}
                     >
                       Create New Group
                     </button>
                     <button
                       onClick={() => setUploadMode('existing')}
-                      className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${
-                        uploadMode === 'existing'
+                      className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${uploadMode === 'existing'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      }`}
+                        }`}
                     >
                       Add to Existing Group
                     </button>
@@ -978,22 +971,20 @@ export default function ChameleonPage() {
 
                 {uploadProgress && (
                   <div
-                    className={`p-4 rounded-lg ${
-                      uploadProgress.includes('Success')
+                    className={`p-4 rounded-lg ${uploadProgress.includes('Success')
                         ? 'bg-green-50 border border-green-200'
                         : uploadProgress.includes('Error')
                           ? 'bg-red-50 border border-red-200'
                           : 'bg-blue-50 border border-blue-200'
-                    }`}
+                      }`}
                   >
                     <p
-                      className={`font-semibold ${
-                        uploadProgress.includes('Success')
+                      className={`font-semibold ${uploadProgress.includes('Success')
                           ? 'text-green-800'
                           : uploadProgress.includes('Error')
                             ? 'text-red-800'
                             : 'text-blue-800'
-                      }`}
+                        }`}
                     >
                       {uploadProgress}
                     </p>
@@ -1003,11 +994,10 @@ export default function ChameleonPage() {
                 <button
                   onClick={handleUpload}
                   disabled={!canUpload || isUploading}
-                  className={`px-8 py-4 rounded-lg font-semibold text-xl transition-colors ${
-                    canUpload && !isUploading
+                  className={`px-8 py-4 rounded-lg font-semibold text-xl transition-colors ${canUpload && !isUploading
                       ? 'bg-green-600 text-white hover:bg-green-700'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   {isUploading ? 'Uploading...' : 'Upload Images'}
                 </button>

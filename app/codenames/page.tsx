@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getWordLists, type WordListInfo } from '@/lib/codenames/words';
 import { getImageLists, type ImageListInfo } from '@/lib/codenames/images';
 import { generateGameCode } from '@/lib/codenames/game';
@@ -563,7 +564,16 @@ export default function CodenamesPage() {
 
     return (
         <main className="h-screen w-screen flex flex-col items-center py-8 overflow-y-auto" style={{ backgroundColor: '#fafafa' }}>
-            <h1 className="text-6xl font-bold text-gray-900 mb-12">Codenames</h1>
+            <div className="w-full max-w-6xl px-8 mb-8 flex justify-between items-center">
+                <Link
+                    href="/"
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-semibold"
+                >
+                    Home
+                </Link>
+                <h1 className="text-6xl font-bold text-gray-900">Codenames</h1>
+                <div className="w-20"></div> {/* Spacer for centering */}
+            </div>
 
             <div className="w-full max-w-4xl px-8 pb-8">
                 {/* Tab Selection */}

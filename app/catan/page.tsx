@@ -437,7 +437,7 @@ export default function CatanPage() {
         <main
             className="h-screen w-screen flex flex-col items-center justify-center overflow-hidden"
             style={{
-                backgroundImage: `url(${getImageUrl('/images/catan_water.png')})`,
+                backgroundImage: 'url(/images/catan_water.png)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',

@@ -53,37 +53,39 @@ function seededRandom(seed: number, index: number): number {
 }
 
 /**
- * Generate key card layout (9 red, 8 blue, 7 neutral, 1 assassin)
+ * Generate key card layout (9 starting team cards, 8 other team cards, 7 neutral, 1 assassin)
  * @param seed - Seed for random generation
+ * @param startingTeam - Which team goes first
  * @returns Array of 25 card types
  */
-export function generateKey(seed: number): CardType[] {
+export function generateKey(seed: number, startingTeam: StartingTeam): CardType[] {
   const key: CardType[] = [];
-  
-  // Add 9 red cards
+
+  // Add 9 cards for the starting team
   for (let i = 0; i < 9; i++) {
-    key.push('red');
+    key.push(startingTeam);
   }
-  
-  // Add 8 blue cards
+
+  // Add 8 cards for the other team
+  const otherTeam = startingTeam === 'red' ? 'blue' : 'red';
   for (let i = 0; i < 8; i++) {
-    key.push('blue');
+    key.push(otherTeam);
   }
-  
+
   // Add 7 neutral cards
   for (let i = 0; i < 7; i++) {
     key.push('neutral');
   }
-  
+
   // Add 1 assassin
   key.push('assassin');
-  
+
   // Shuffle using seeded random
   for (let i = key.length - 1; i > 0; i--) {
     const j = Math.floor(seededRandom(seed, i) * (i + 1));
     [key[i], key[j]] = [key[j], key[i]];
   }
-  
+
   return key;
 }
 
@@ -113,8 +115,8 @@ export function createGameState(
   }
   
   const seed = codeToSeed(code);
-  const key = generateKey(seed);
   const startingTeam = getStartingTeam(seed);
+  const key = generateKey(seed, startingTeam);
   
   const cards: Card[] = contents.map((content, index) => ({
     id: index,

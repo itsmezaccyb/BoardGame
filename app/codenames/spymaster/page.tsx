@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { inchesToPixels } from '@/lib/dimensions';
 import { GameSettingsPanel } from '@/components/GameSettingsPanel';
@@ -22,11 +22,93 @@ const CARD_COLORS: Record<CardType, string> = {
   assassin: '#000000',
 };
 
+interface CardStackIndicatorProps {
+  team: 'red' | 'blue';
+  count: number;
+  total: number;
+  cardSize: number;
+  rotation: number;
+}
+
+function CardStackIndicator({ team, count, total, cardSize, rotation }: CardStackIndicatorProps) {
+  const color = CARD_COLORS[team];
+  const stackOffset = cardSize * 0.08; // Smaller offset for square cards
+
+  // Always show at least 1 card (the bottom/fixed card), and up to 5 cards total
+  const visibleCards = Math.min(5, Math.max(1, count || 1));
+  // Calculate how many cards are above the bottom card
+  const cardsAboveBottom = Math.max(0, visibleCards - 1);
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* Card Stack */}
+      <div
+        className="relative"
+        style={{
+          width: cardSize,
+          height: cardSize + cardsAboveBottom * stackOffset,
+          transform: `rotate(${rotation}deg)`
+        }}
+      >
+        {/* Bottom card (always visible, stays in place) */}
+        <div
+          className="absolute border-2 rounded-lg flex items-center justify-center font-bold text-white"
+          style={{
+            width: cardSize,
+            height: cardSize,
+            backgroundColor: count === 0 ? 'transparent' : color,
+            borderColor: team === 'red' ? '#b71c1c' : '#0d47a1',
+            top: 0,
+            left: 0,
+            zIndex: 1,
+            boxShadow: count === 0 ? 'none' : '0 2px 4px rgba(0,0,0,0.3)',
+          }}
+        >
+          {count === 1 ? (
+            <span style={{ fontSize: `${cardSize * 0.35}px`, fontWeight: 'bold' }}>
+              {count}
+            </span>
+          ) : null}
+        </div>
+
+        {/* Cards above bottom card */}
+        {Array.from({ length: cardsAboveBottom }).map((_, index) => {
+          const cardIndex = index + 1; // Start from 1 since 0 is the bottom card
+          const isTopCard = cardIndex === visibleCards - 1;
+          return (
+            <div
+              key={cardIndex}
+              className="absolute border-2 rounded-lg flex items-center justify-center font-bold text-white"
+              style={{
+                width: cardSize,
+                height: cardSize,
+                backgroundColor: color,
+                borderColor: team === 'red' ? '#b71c1c' : '#0d47a1',
+                top: cardIndex * stackOffset,
+                left: cardIndex * (stackOffset * 0.5),
+                zIndex: cardIndex + 1,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              }}
+            >
+              {isTopCard ? (
+                <span style={{ fontSize: `${cardSize * 0.35}px`, fontWeight: 'bold' }}>
+                  {count}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SpymasterViewContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cardRotation, setCardRotation] = useState(0); // 0, 90, 180, 270 degrees
 
   const code = searchParams.get('code') || '';
   const mode = (searchParams.get('mode') as 'word' | 'image') || 'word';
@@ -103,6 +185,19 @@ function SpymasterViewContent() {
     await saveGameStateToServer(newState);
   };
 
+  // Calculate remaining cards for each team
+  const remainingCards = useMemo(() => {
+    if (!gameState) return { red: 0, blue: 0, neutral: 0, assassin: 1 };
+
+    const unrevealed = gameState.cards.filter(card => !card.revealed);
+    return {
+      red: unrevealed.filter(card => card.type === 'red').length,
+      blue: unrevealed.filter(card => card.type === 'blue').length,
+      neutral: unrevealed.filter(card => card.type === 'neutral').length,
+      assassin: unrevealed.filter(card => card.type === 'assassin').length,
+    };
+  }, [gameState]);
+
   if (loading) {
     return (
       <main className="h-screen w-screen flex items-center justify-center" style={{ backgroundColor: '#fafafa' }}>
@@ -147,6 +242,15 @@ function SpymasterViewContent() {
               </span>
             </p>
           </div>
+          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50 rounded-lg">
+            <span className="font-semibold text-gray-900">Rotate Cards ({cardRotation}°)</span>
+            <button
+              onClick={() => setCardRotation((prev) => (prev + 90) % 360)}
+              className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm"
+            >
+              ↻ Rotate 90°
+            </button>
+          </div>
           <button
             onClick={handleNewGame}
             className="w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors bg-gray-700 text-white hover:bg-gray-600 text-left"
@@ -155,26 +259,47 @@ function SpymasterViewContent() {
           </button>
         </GameSettingsPanel>
 
-        {/* Key Card Grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(5, ${cardSize}px)`,
-            gridTemplateRows: `repeat(5, ${cardSize}px)`,
-            gap: `${gap}px`,
-            width: `${gridSize}px`,
-            height: `${gridSize}px`,
-          }}
-        >
-          {gameState.cards.map((card) => (
-            <KeyCard
-              key={card.id}
-              card={card}
-              mode={mode}
-              size={cardSize}
-              onReveal={() => handleRevealCard(card.id)}
-            />
-          ))}
+        {/* Game Board with Card Indicators */}
+        <div className="flex items-center justify-center gap-8">
+          {/* Red Team Card Stack (Left Side) */}
+          <CardStackIndicator
+            team="red"
+            count={remainingCards.red}
+            total={gameState.startingTeam === 'red' ? 9 : 8}
+            cardSize={cardSize}
+            rotation={cardRotation}
+          />
+
+          {/* Key Card Grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(5, ${cardSize}px)`,
+              gridTemplateRows: `repeat(5, ${cardSize}px)`,
+              gap: `${gap}px`,
+              width: `${gridSize}px`,
+              height: `${gridSize}px`,
+            }}
+          >
+            {gameState.cards.map((card) => (
+              <KeyCard
+                key={card.id}
+                card={card}
+                mode={mode}
+                size={cardSize}
+                onReveal={() => handleRevealCard(card.id)}
+              />
+            ))}
+          </div>
+
+          {/* Blue Team Card Stack (Right Side) */}
+          <CardStackIndicator
+            team="blue"
+            count={remainingCards.blue}
+            total={gameState.startingTeam === 'blue' ? 9 : 8}
+            cardSize={cardSize}
+            rotation={cardRotation}
+          />
         </div>
 
         {/* Revealed Status */}
@@ -205,6 +330,24 @@ function SpymasterViewContent() {
                 Revealed: {gameState.cards.filter(c => c.revealed).length}/25
               </p>
             </div>
+          </div>
+
+          {/* Card Stack Indicators */}
+          <div className="flex justify-center gap-8 mt-3">
+            <CardStackIndicator
+              team="red"
+              count={remainingCards.red}
+              total={gameState.startingTeam === 'red' ? 9 : 8}
+              cardSize={40}
+              rotation={cardRotation}
+            />
+            <CardStackIndicator
+              team="blue"
+              count={remainingCards.blue}
+              total={gameState.startingTeam === 'blue' ? 9 : 8}
+              cardSize={40}
+              rotation={cardRotation}
+            />
           </div>
         </div>
 

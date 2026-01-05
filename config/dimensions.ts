@@ -10,5 +10,5 @@
  * 
  * Default value is optimized for large TV displays (55"+)
  */
-export const PIXELS_PER_INCH = 40.097;
+export const PIXELS_PER_INCH = 53.33;
 

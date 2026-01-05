@@ -12,7 +12,7 @@ export async function GET() {
       console.error('Error fetching image lists:', error);
       return NextResponse.json([], { status: 500 });
     }
-
+    
     return NextResponse.json(data || []);
   } catch (error) {
     console.error('Error reading image lists:', error);

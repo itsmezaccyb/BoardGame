@@ -5,9 +5,11 @@ import Link from 'next/link';
 
 interface GameSettingsPanelProps {
   children?: React.ReactNode;
+  expansion?: 'classic' | 'seafarers';
+  onExpansionChange?: (expansion: 'classic' | 'seafarers') => void;
 }
 
-export function GameSettingsPanel({ children }: GameSettingsPanelProps) {
+export function GameSettingsPanel({ children, expansion, onExpansionChange }: GameSettingsPanelProps) {
   return (
     <>
       {/* Transparent hover zone */}
@@ -21,7 +23,22 @@ export function GameSettingsPanel({ children }: GameSettingsPanelProps) {
           >
             Home
           </Link>
-          
+
+          {/* Expansion Selector */}
+          {onExpansionChange && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">Expansion</label>
+              <select
+                value={expansion || 'classic'}
+                onChange={(e) => onExpansionChange(e.target.value as 'classic' | 'seafarers')}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="classic">Classic</option>
+                <option value="seafarers">Seafarers</option>
+              </select>
+            </div>
+          )}
+
           {/* Game-specific settings */}
           {children && (
             <div className="flex flex-col gap-2">

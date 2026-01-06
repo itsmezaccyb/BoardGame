@@ -29,12 +29,8 @@ export default function CatanPage() {
         setRandomSeed(Math.random() * 10000);
     }, [playerCount, scenario]);
 
-    // Force 4-player mode for 4-islands scenario
-    useEffect(() => {
-        if (scenario === '4-islands' && playerCount !== 4) {
-            setPlayerCount(4);
-        }
-    }, [scenario, playerCount]);
+    // 4-islands scenario supports 3 and 4 players
+    // No forced player count restriction
 
     // Resource image mapping
     const resourceImages: Record<ResourceType, string> = {
@@ -133,16 +129,29 @@ export default function CatanPage() {
         } else {
             // Seafarers scenarios
             if (scenario === '4-islands') {
-                // 4-islands: 4-5-6-7-6-5-4 (4-player only for now)
-                return [
-                    { count: 4, offset: 1.5 },    // row 0
-                    { count: 5, offset: 1 },      // row 1
-                    { count: 6, offset: 0.5 },    // row 2
-                    { count: 7, offset: 0 },      // row 3
-                    { count: 6, offset: 0.5 },    // row 4
-                    { count: 5, offset: 1 },      // row 5
-                    { count: 4, offset: 1.5 },    // row 6
-                ];
+                if (playerCount === 6) {
+                    // 6-player 4-islands: 7-8-9-10-9-8-7 (58 hexes)
+                    return [
+                        { count: 7, offset: 1.5 },    // row 0
+                        { count: 8, offset: 1 },      // row 1
+                        { count: 9, offset: 0.5 },    // row 2
+                        { count: 10, offset: 0 },     // row 3
+                        { count: 9, offset: 0.5 },    // row 4
+                        { count: 8, offset: 1 },      // row 5
+                        { count: 7, offset: 1.5 },    // row 6
+                    ];
+                } else {
+                    // 3-player and 4-player 4-islands: 4-5-6-7-6-5-4 (37 hexes)
+                    return [
+                        { count: 4, offset: 1.5 },    // row 0
+                        { count: 5, offset: 1 },      // row 1
+                        { count: 6, offset: 0.5 },    // row 2
+                        { count: 7, offset: 0 },      // row 3
+                        { count: 6, offset: 0.5 },    // row 4
+                        { count: 5, offset: 1 },      // row 5
+                        { count: 4, offset: 1.5 },    // row 6
+                    ];
+                }
             } else if (playerCount === 3) {
                 // 3-player "Heading for New Shores": 4-5-6-7-6-5-4
                 return [
@@ -497,7 +506,7 @@ export default function CatanPage() {
     // ========== SCENARIO CONFIGURATION SYSTEM ==========
     type ScenarioConfig = {
         layout: string[][]; // land/water layout
-        placementRules?: (hexes: Hex[], resources: ResourceType[], seed: number, rows: Array<{ count: number; offset: number }>, counts: Partial<Record<ResourceType, number>>) => Hex[];
+        placementRules?: (hexes: Hex[], resources: ResourceType[], seed: number, rows: Array<{ count: number; offset: number }>, counts: Partial<Record<ResourceType, number>>, playerCount: 3 | 4 | 6 | '5-6') => Hex[];
         zones?: {
             mainland?: { rows: number[] };
             islands?: { rows: number[] };
@@ -793,76 +802,105 @@ export default function CatanPage() {
         landResources: ResourceType[],
         seed: number,
         rows: Array<{ count: number; offset: number }>,
-        counts: Partial<Record<ResourceType, number>>
+        counts: Partial<Record<ResourceType, number>>,
+        playerCount: 3 | 4 | 6 | '5-6'
     ): Hex[] => {
-        // Water template configurations
-        const waterTemplates = [
-            {
-                central: [16, 17, 18, 19, 21, 22],
-                perimeter: [[2, 3], [7], [12, 13], [20], [25, 26], [31], [35, 36]]
-            },
-            {
-                central: [16, 17, 18, 12, 13, 20, 21, 22],
-                perimeter: [[2, 3], [7], [12, 13], [19], [25, 26], [31], [35, 36]]
-            },
-            {
-                central: [16, 17, 18, 25, 26, 20, 21, 22],
-                perimeter: [[2, 3], [7], [12, 13], [19], [25, 26], [31], [35, 36]]
-            },
-            {
-                central: [16, 17, 24, 25, 26, 20, 21, 22],
-                perimeter: [[2, 3], [7], [12, 13], [19], [25, 26], [31], [35, 36]]
-            },
-            {
-                central: [16, 17, 11, 12, 13, 20, 21, 22],
-                perimeter: [[2, 3], [7], [12, 13], [19], [25, 26], [31], [35, 36]]
-            },
-            {
-                central: [16, 17, 18, 12, 13, 14, 21, 22],
-                perimeter: [[2, 3], [7], [12, 13], [19], [25, 26], [31], [35, 36]]
-            },
-            {
-                central: [16, 17, 18, 25, 26, 21, 22, 20],
-                perimeter: [[2, 3], [7], [12, 13], [19], [25, 26], [31], [35, 36]]
-            }, {
-                central: [16, 17, 18, 25, 26, 21, 22, 20],
-                perimeter: [[2, 3], [7], [12, 13], [25, 26], [31], [35, 36]]
-            },
-            {
-                central: [16, 17, 24, 25, 26, 20, 21, 22],
-                perimeter: [[2, 3], [7], [12, 13], [18], [25, 26], [31], [35, 36]]
-            },
+        // Land resource templates - hexes that will have resources (1-indexed)
+        // All other hexes become water
 
+        // 4-player templates (23 land hexes: 5 wood, 5 sheep, 5 wheat, 4 brick, 4 rock)
+        const fourPlayerTemplates = [
+            // Template 0
+            [1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 18, 23, 27, 28, 29, 30, 32, 33, 34, 36, 37],
+            // Template 1
+            [1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 23, 24, 27, 28, 29, 30, 32, 33, 34, 35, 37],
+            // Template 2
+            [1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 19, 23, 27, 28, 29, 30, 32, 33, 34, 35, 37],
+            // Template 3
+            [1, 2, 4, 5, 6, 8, 9, 11, 10, 12, 14, 15, 19, 23, 24, 27, 28, 29, 30, 32, 33, 34, 36],
+            // Template 4
+            [1, 2, 4, 5, 6, 8, 9, 11, 10, 15, 20, 23, 24, 25, 27, 28, 29, 30, 32, 33, 34, 36, 37],
+            // Template 5
+            [1, 2, 4, 5, 6, 8, 9, 10, 14, 15, 18, 23, 24, 25, 27, 28, 29, 30, 32, 33, 34, 35, 37],
+            // Template 6
+            [1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 18, 23, 27, 28, 29, 30, 32, 33, 34, 36, 37],
+            // Template 7
+            [1, 2, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 23, 24, 25, 27, 28, 29, 30, 32, 33, 34, 35],
         ];
 
-        // Select random template
-        const templateIndex = Math.floor(seededRandom(seed + 5000, 0) * waterTemplates.length);
-        const template = waterTemplates[templateIndex];
-
-        // Build water hex indices (1-indexed, will convert to 0-indexed)
-        const waterIndices: number[] = [...template.central];
-
-        // For each perimeter group, select random option
-        template.perimeter.forEach((options, idx) => {
-            if (options.length === 1) {
-                waterIndices.push(options[0]);
-            } else {
-                const choice = Math.floor(seededRandom(seed + 6000, idx) * options.length);
-                waterIndices.push(options[choice]);
-            }
-        });
-
-        // Remove duplicates and convert to 0-indexed
-        const uniqueWaterIndices = Array.from(new Set(waterIndices)).map(i => i - 1);
-
-        // Build resource pool: 5 sheep, 5 wheat, 5 wood, 4 brick, 4 rock
-        const resourcePool: ResourceType[] = [
-            'pasture', 'pasture', 'pasture', 'pasture', 'pasture', // 5 sheep
-            'field', 'field', 'field', 'field', 'field',           // 5 wheat
-            'forest', 'forest', 'forest', 'forest', 'forest',      // 5 wood
-            'hill', 'hill', 'hill', 'hill',                        // 4 brick
-            'mountain', 'mountain', 'mountain', 'mountain',        // 4 rock
+        // 3-player templates (20 land hexes: 4 wood, 4 sheep, 4 wheat, 4 brick, 4 rock)
+        const threePlayerTemplates: number[][] = [
+            // Template 0
+            [4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 23, 24, 27, 28, 29, 30, 32, 33, 34, 37],
+            [1, 4, 5, 6, 8, 9, 10, 13, 14, 15, 23, 24, 27, 28, 29, 30, 32, 33, 34, 37],
+            [1, 4, 5, 6, 8, 9, 10, 11, 14, 15, 23, 24, 27, 28, 29, 30, 32, 33, 34, 37],
         ];
+
+        // 6-player templates (32 land hexes: 7 wood, 7 sheep, 6 wheat, 6 brick, 6 rock)
+        const sixPlayerTemplates: number[][] = [
+            // Template 0
+            [1, 2, 8, 9, 17, 4, 11, 12, 20, 19, 21, 6, 7, 14, 15, 35, 36, 44, 45, 52, 53, 55, 47, 39, 38, 23, 48, 57, 58, 50, 51, 43],
+            // Template 1
+            [1, 2, 8, 9, 18, 4, 5, 11, 12, 20, 7, 14, 15, 23, 24, 35, 36, 44, 45, 52, 53, 55, 56, 47, 48, 38, 39, 58, 50, 51, 43, 42],
+            // Template 2
+            [1, 2, 8, 9, 17, 4, 5, 11, 12, 20, 7, 14, 15, 23, 24, 21, 36, 44, 45, 52, 53, 55, 56, 47, 48, 38, 39, 58, 50, 51, 43, 42],
+            // Template 3
+            [1, 2, 8, 9, 17, 4, 11, 12, 20, 19, 16, 6, 7, 14, 15, 35, 36, 44, 45, 52, 23, 55, 47, 39, 38, 54, 48, 57, 58, 50, 51, 42],
+            [1, 40, 8, 9, 17, 4, 11, 12, 20, 19, 16, 6, 7, 14, 15, 35, 36, 44, 45, 52, 23, 22, 47, 39, 38, 54, 48, 57, 58, 50, 51, 42],
+        ];
+
+        // Select appropriate template set based on player count
+        const landTemplates = playerCount === 3 ? threePlayerTemplates :
+            playerCount === 6 ? sixPlayerTemplates :
+                fourPlayerTemplates;
+
+        // If no templates defined for this player count, return hexes as-is (all water)
+        if (!landTemplates || landTemplates.length === 0) {
+            console.warn(`No templates defined for ${playerCount}-player 4-islands`);
+            hexes.forEach(hex => {
+                hex.resourceType = 'water';
+            });
+            return hexes;
+        }
+
+        // Select template randomly
+        const templateIndex = Math.floor(seededRandom(seed + 5000, 0) * landTemplates.length);
+        const landHexIndices = landTemplates[templateIndex];
+
+        // Convert to 0-indexed
+        const landIndices = landHexIndices.map(i => i - 1);
+
+        // Build resource pool based on player count
+        let resourcePool: ResourceType[];
+
+        if (playerCount === 3) {
+            // 3-player: 20 land hexes (4 of each resource)
+            resourcePool = [
+                'pasture', 'pasture', 'pasture', 'pasture',     // 4 sheep
+                'field', 'field', 'field', 'field',             // 4 wheat
+                'forest', 'forest', 'forest', 'forest',         // 4 wood
+                'hill', 'hill', 'hill', 'hill',                 // 4 brick
+                'mountain', 'mountain', 'mountain', 'mountain', // 4 rock
+            ];
+        } else if (playerCount === 6) {
+            // 6-player: 32 land hexes (7 wood, 7 sheep, 6 wheat, 6 brick, 6 rock)
+            resourcePool = [
+                'forest', 'forest', 'forest', 'forest', 'forest', 'forest', 'forest', // 7 wood
+                'pasture', 'pasture', 'pasture', 'pasture', 'pasture', 'pasture', 'pasture', // 7 sheep
+                'field', 'field', 'field', 'field', 'field', 'field',     // 6 wheat
+                'hill', 'hill', 'hill', 'hill', 'hill', 'hill',           // 6 brick
+                'mountain', 'mountain', 'mountain', 'mountain', 'mountain', 'mountain', // 6 rock
+            ];
+        } else {
+            // 4-player: 23 land hexes (5 wood, 5 sheep, 5 wheat, 4 brick, 4 rock)
+            resourcePool = [
+                'pasture', 'pasture', 'pasture', 'pasture', 'pasture', // 5 sheep
+                'field', 'field', 'field', 'field', 'field',           // 5 wheat
+                'forest', 'forest', 'forest', 'forest', 'forest',      // 5 wood
+                'hill', 'hill', 'hill', 'hill',                        // 4 brick
+                'mountain', 'mountain', 'mountain', 'mountain',        // 4 rock
+            ];
+        }
 
         // Shuffle resource pool
         for (let i = resourcePool.length - 1; i > 0; i--) {
@@ -873,17 +911,17 @@ export default function CatanPage() {
         // Assign resources to hexes
         let resourceIndex = 0;
         hexes.forEach((hex, index) => {
-            if (uniqueWaterIndices.includes(index)) {
-                // This hex is water
-                hex.resourceType = 'water';
-            } else {
-                // This hex gets a resource (or water if we run out)
+            if (landIndices.includes(index)) {
+                // This hex gets a resource
                 if (resourceIndex < resourcePool.length) {
                     hex.resourceType = resourcePool[resourceIndex++];
                 } else {
-                    // Extra hexes become water
+                    // Shouldn't happen but fallback to water
                     hex.resourceType = 'water';
                 }
+            } else {
+                // This hex is water
+                hex.resourceType = 'water';
             }
         });
 
@@ -999,7 +1037,7 @@ export default function CatanPage() {
 
             // Apply scenario-specific placement rules if available
             if (scenarioConfig?.placementRules) {
-                scenarioConfig.placementRules(hexesArray, landResources, randomSeed, rows, counts);
+                scenarioConfig.placementRules(hexesArray, landResources, randomSeed, rows, counts, playerCount);
             } else {
                 // Fallback to simple random placement
                 for (let i = landResources.length - 1; i > 0; i--) {
@@ -1681,6 +1719,379 @@ export default function CatanPage() {
         return portTypes;
     }, [playerCount, expansion, randomSeed]);
 
+    // 4-Islands Port Assignments (9 ports for 3/4-player, 11 ports for 6-player)
+    const generateFourIslandsPortAssignments = useMemo(() => {
+        if (scenario !== '4-islands') {
+            return [];
+        }
+
+        let portTypes: string[];
+
+        if (playerCount === 6) {
+            // 6-player: 11 total ports
+            // 5 resource ports (one of each) + 1 random resource port + 5 generic 3:1 ports
+            const resourceTypes = ['sheep_2-1', 'wood_2-1', 'rock_2-1', 'brick_2-1', 'wheat_2-1'];
+
+            // Pick a random resource for the 6th resource port
+            const randomResourceIndex = Math.floor(seededRandom(randomSeed + 8000, 0) * resourceTypes.length);
+            const extraResource = resourceTypes[randomResourceIndex];
+
+            portTypes = [
+                'sheep_2-1',
+                'wood_2-1',
+                'rock_2-1',
+                'brick_2-1',
+                'wheat_2-1',
+                extraResource,
+                'generic_3-1',
+                'generic_3-1',
+                'generic_3-1',
+                'generic_3-1',
+                'generic_3-1',
+            ];
+        } else {
+            // 3/4-player: 9 total ports (5 resource ports + 4 generic 3:1 ports)
+            portTypes = [
+                'sheep_2-1',
+                'wood_2-1',
+                'rock_2-1',
+                'brick_2-1',
+                'wheat_2-1',
+                'generic_3-1',
+                'generic_3-1',
+                'generic_3-1',
+                'generic_3-1',
+            ];
+        }
+
+        // Shuffle using seeded random
+        let seed = randomSeed + 8001;
+        for (let i = portTypes.length - 1; i > 0; i--) {
+            const j = Math.floor(seededRandom(seed++, 0) * (i + 1));
+            [portTypes[i], portTypes[j]] = [portTypes[j], portTypes[i]];
+        }
+
+        console.log('Generated port types:', portTypes, 'Length:', portTypes.length);
+        return portTypes;
+    }, [scenario, randomSeed, playerCount]);
+
+    // 4-Islands Port Placements
+    const fourIslandsPortPlacements = useMemo(() => {
+        console.log('fourIslandsPortPlacements called - scenario:', scenario, 'assignments length:', generateFourIslandsPortAssignments.length);
+
+        if (scenario !== '4-islands' || generateFourIslandsPortAssignments.length === 0) {
+            console.log('Returning empty - scenario is not 4-islands or no assignments');
+            return [];
+        }
+
+        console.log('Port assignments:', generateFourIslandsPortAssignments);
+
+        // Determine which template is being used (must match fourIslandsPlacement logic)
+        // 3-player has 3 templates, 4-player has 8 templates, 6-player has 5 templates
+        const maxTemplates = playerCount === 3 ? 3 : playerCount === 6 ? 5 : 8;
+        const templateIndex = Math.floor(seededRandom(randomSeed + 5000, 0) * maxTemplates);
+        console.log('Using template index:', templateIndex, 'for', playerCount, 'players');
+
+        // Port locations for 3-player templates
+        const threePlayerPortLocations = [
+            // Template 0 ports
+            [
+                { hexIndex: 23, vertex1: 3, vertex2: 4 },
+                { hexIndex: 34, vertex1: 1, vertex2: 2 },
+                { hexIndex: 37, vertex1: 3, vertex2: 4 },
+                { hexIndex: 27, vertex1: 4, vertex2: 5 },
+                { hexIndex: 5, vertex1: 5, vertex2: 0 },
+                { hexIndex: 11, vertex1: 2, vertex2: 3 },
+                { hexIndex: 4, vertex1: 0, vertex2: 1 },
+                { hexIndex: 15, vertex1: 0, vertex2: 1 },
+                { hexIndex: 13, vertex1: 3, vertex2: 4 },
+            ],
+            // Template 1 ports
+            [
+                { hexIndex: 34, vertex1: 3, vertex2: 4 },
+                { hexIndex: 23, vertex1: 5, vertex2: 0 },
+                { hexIndex: 10, vertex1: 4, vertex2: 5 },
+                { hexIndex: 6, vertex1: 0, vertex2: 1 },
+                { hexIndex: 4, vertex1: 0, vertex2: 1 },
+                { hexIndex: 15, vertex1: 1, vertex2: 2 },
+                { hexIndex: 13, vertex1: 3, vertex2: 4 },
+                { hexIndex: 37, vertex1: 3, vertex2: 4 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+            ],
+            // Template 2 ports
+            [
+                { hexIndex: 34, vertex1: 2, vertex2: 3 },
+                { hexIndex: 23, vertex1: 4, vertex2: 5 },
+                { hexIndex: 10, vertex1: 4, vertex2: 5 },
+                { hexIndex: 6, vertex1: 0, vertex2: 1 },
+                { hexIndex: 4, vertex1: 0, vertex2: 1 },
+                { hexIndex: 15, vertex1: 1, vertex2: 2 },
+                { hexIndex: 14, vertex1: 4, vertex2: 5 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+                { hexIndex: 37, vertex1: 3, vertex2: 4 },
+            ],
+        ];
+
+        // Port locations for 4-player templates
+        const fourPlayerPortLocations = [
+            // Template 0 ports
+            [
+                { hexIndex: 1, vertex1: 4, vertex2: 5 },
+                { hexIndex: 10, vertex1: 4, vertex2: 5 },
+                { hexIndex: 18, vertex1: 2, vertex2: 3 },
+                { hexIndex: 9, vertex1: 0, vertex2: 1 },
+                { hexIndex: 13, vertex1: 2, vertex2: 3 },
+                { hexIndex: 23, vertex1: 3, vertex2: 4 },
+                { hexIndex: 30, vertex1: 1, vertex2: 2 },
+                { hexIndex: 36, vertex1: 3, vertex2: 4 },
+                { hexIndex: 33, vertex1: 2, vertex2: 3 },
+            ],
+            // Template 1 ports
+            [
+                { hexIndex: 1, vertex1: 5, vertex2: 0 },
+                { hexIndex: 10, vertex1: 4, vertex2: 5 },
+                { hexIndex: 4, vertex1: 1, vertex2: 2 },
+                { hexIndex: 14, vertex1: 3, vertex2: 4 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+                { hexIndex: 27, vertex1: 4, vertex2: 5 },
+                { hexIndex: 37, vertex1: 3, vertex2: 4 },
+                { hexIndex: 30, vertex1: 0, vertex2: 1 },
+                { hexIndex: 23, vertex1: 3, vertex2: 4 },
+            ],
+            // Template 2 ports
+            [
+                { hexIndex: 5, vertex1: 4, vertex2: 5 },
+                { hexIndex: 10, vertex1: 3, vertex2: 4 },
+                { hexIndex: 19, vertex1: 0, vertex2: 1 },
+                { hexIndex: 9, vertex1: 1, vertex2: 2 },
+                { hexIndex: 14, vertex1: 3, vertex2: 4 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+                { hexIndex: 37, vertex1: 3, vertex2: 4 },
+                { hexIndex: 30, vertex1: 5, vertex2: 0 },
+                { hexIndex: 29, vertex1: 3, vertex2: 4 },
+            ],
+            // Template 3 ports
+            [
+                { hexIndex: 1, vertex1: 4, vertex2: 5 },
+                { hexIndex: 10, vertex1: 4, vertex2: 5 },
+                { hexIndex: 12, vertex1: 3, vertex2: 4 },
+                { hexIndex: 4, vertex1: 1, vertex2: 2 },
+                { hexIndex: 15, vertex1: 2, vertex2: 3 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+                { hexIndex: 36, vertex1: 3, vertex2: 4 },
+                { hexIndex: 23, vertex1: 3, vertex2: 4 },
+                { hexIndex: 34, vertex1: 1, vertex2: 2 },
+            ],
+            // Template 4 ports
+            [
+                { hexIndex: 10, vertex1: 4, vertex2: 5 },
+                { hexIndex: 2, vertex1: 1, vertex2: 2 },
+                { hexIndex: 15, vertex1: 1, vertex2: 2 },
+                { hexIndex: 4, vertex1: 0, vertex2: 1 },
+                { hexIndex: 24, vertex1: 0, vertex2: 1 },
+                { hexIndex: 23, vertex1: 4, vertex2: 5 },
+                { hexIndex: 34, vertex1: 3, vertex2: 4 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+                { hexIndex: 37, vertex1: 3, vertex2: 4 },
+            ],
+            // Template 5 ports
+            [
+                { hexIndex: 18, vertex1: 1, vertex2: 2 },
+                { hexIndex: 5, vertex1: 4, vertex2: 5 },
+                { hexIndex: 2, vertex1: 0, vertex2: 1 },
+                { hexIndex: 4, vertex1: 1, vertex2: 2 },
+                { hexIndex: 14, vertex1: 3, vertex2: 4 },
+                { hexIndex: 23, vertex1: 4, vertex2: 5 },
+                { hexIndex: 34, vertex1: 1, vertex2: 2 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+                { hexIndex: 36, vertex1: 3, vertex2: 4 },
+            ],
+            // Template 6 ports
+            [
+                { hexIndex: 1, vertex1: 4, vertex2: 5 },
+                { hexIndex: 10, vertex1: 3, vertex2: 4 },
+                { hexIndex: 18, vertex1: 1, vertex2: 2 },
+                { hexIndex: 4, vertex1: 1, vertex2: 2 },
+                { hexIndex: 14, vertex1: 3, vertex2: 4 },
+                { hexIndex: 23, vertex1: 4, vertex2: 5 },
+                { hexIndex: 30, vertex1: 0, vertex2: 1 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+                { hexIndex: 37, vertex1: 3, vertex2: 4 },
+            ],
+            // Template 7 ports
+            [
+                { hexIndex: 5, vertex1: 5, vertex2: 0 },
+                { hexIndex: 11, vertex1: 1, vertex2: 2 },
+                { hexIndex: 4, vertex1: 0, vertex2: 1 },
+                { hexIndex: 14, vertex1: 3, vertex2: 4 },
+                { hexIndex: 28, vertex1: 1, vertex2: 2 },
+                { hexIndex: 32, vertex1: 2, vertex2: 3 },
+                { hexIndex: 25, vertex1: 0, vertex2: 1 },
+                { hexIndex: 23, vertex1: 3, vertex2: 4 },
+                { hexIndex: 34, vertex1: 3, vertex2: 4 },
+            ],
+        ];
+
+        // Port locations for 6-player templates (11 ports each)
+        const sixPlayerPortLocations = [
+            // Template 0 ports
+            [
+                { hexIndex: 8, vertex1: 4, vertex2: 5 },
+                { hexIndex: 17, vertex1: 2, vertex2: 3 },
+                { hexIndex: 11, vertex1: 4, vertex2: 5 },
+                { hexIndex: 21, vertex1: 3, vertex2: 4 },
+                { hexIndex: 7, vertex1: 1, vertex2: 2 },
+                { hexIndex: 43, vertex1: 2, vertex2: 3 },
+                { hexIndex: 57, vertex1: 3, vertex2: 4 },
+                { hexIndex: 39, vertex1: 1, vertex2: 2 },
+                { hexIndex: 55, vertex1: 4, vertex2: 5 },
+                { hexIndex: 36, vertex1: 1, vertex2: 2 },
+                { hexIndex: 44, vertex1: 4, vertex2: 5 },
+            ],
+            // Template 1 ports
+            [
+                { hexIndex: 1, vertex1: 5, vertex2: 0 },
+                { hexIndex: 8, vertex1: 3, vertex2: 4 },
+                { hexIndex: 5, vertex1: 5, vertex2: 0 },
+                { hexIndex: 20, vertex1: 1, vertex2: 2 },
+                { hexIndex: 7, vertex1: 0, vertex2: 1 },
+                { hexIndex: 24, vertex1: 1, vertex2: 2 },
+                { hexIndex: 51, vertex1: 1, vertex2: 2 },
+                { hexIndex: 56, vertex1: 3, vertex2: 4 },
+                { hexIndex: 38, vertex1: 5, vertex2: 0 },
+                { hexIndex: 35, vertex1: 4, vertex2: 5 },
+                { hexIndex: 53, vertex1: 3, vertex2: 4 },
+            ],
+            // Template 2 ports
+            [
+                { hexIndex: 8, vertex1: 4, vertex2: 5 },
+                { hexIndex: 4, vertex1: 5, vertex2: 0 },
+                { hexIndex: 21, vertex1: 3, vertex2: 4 },
+                { hexIndex: 7, vertex1: 0, vertex2: 1 },
+                { hexIndex: 24, vertex1: 3, vertex2: 4 },
+                { hexIndex: 42, vertex1: 4, vertex2: 5 },
+                { hexIndex: 58, vertex1: 2, vertex2: 3 },
+                { hexIndex: 56, vertex1: 0, vertex2: 1 },
+                { hexIndex: 38, vertex1: 0, vertex2: 1 },
+                { hexIndex: 36, vertex1: 4, vertex2: 5 },
+                { hexIndex: 52, vertex1: 2, vertex2: 3 },
+            ],
+            // Template 3 ports
+            [
+                { hexIndex: 8, vertex1: 4, vertex2: 5 },
+                { hexIndex: 17, vertex1: 2, vertex2: 3 },
+                { hexIndex: 4, vertex1: 1, vertex2: 2 },
+                { hexIndex: 7, vertex1: 0, vertex2: 1 },
+                { hexIndex: 23, vertex1: 1, vertex2: 2 },
+                { hexIndex: 42, vertex1: 1, vertex2: 2 },
+                { hexIndex: 58, vertex1: 3, vertex2: 4 },
+                { hexIndex: 38, vertex1: 5, vertex2: 0 },
+                { hexIndex: 54, vertex1: 3, vertex2: 4 },
+                { hexIndex: 35, vertex1: 3, vertex2: 4 },
+                { hexIndex: 52, vertex1: 1, vertex2: 2 },
+            ],
+            // Template 4 ports (same as template 3)
+            [
+                { hexIndex: 8, vertex1: 4, vertex2: 5 },
+                { hexIndex: 17, vertex1: 2, vertex2: 3 },
+                { hexIndex: 4, vertex1: 1, vertex2: 2 },
+                { hexIndex: 7, vertex1: 0, vertex2: 1 },
+                { hexIndex: 23, vertex1: 1, vertex2: 2 },
+                { hexIndex: 42, vertex1: 1, vertex2: 2 },
+                { hexIndex: 58, vertex1: 3, vertex2: 4 },
+                { hexIndex: 38, vertex1: 5, vertex2: 0 },
+                { hexIndex: 54, vertex1: 3, vertex2: 4 },
+                { hexIndex: 35, vertex1: 3, vertex2: 4 },
+                { hexIndex: 52, vertex1: 1, vertex2: 2 },
+            ],
+        ];
+
+        // Select the appropriate port location array based on player count
+        const portLocationsByTemplate = playerCount === 3 ? threePlayerPortLocations :
+            playerCount === 6 ? sixPlayerPortLocations :
+                fourPlayerPortLocations;
+        const portLocations = portLocationsByTemplate[templateIndex];
+
+        // If this template has no ports defined yet, return empty
+        if (!portLocations || portLocations.length === 0) {
+            console.log('No ports defined for template', templateIndex);
+            return [];
+        }
+
+        // Calculate port positions
+        const placements: Array<{
+            x: number;
+            y: number;
+            angle: number;
+            portType: string;
+        }> = [];
+
+        portLocations.forEach((location, idx) => {
+            // Convert 1-indexed hex to 0-indexed
+            const hexIdx = location.hexIndex - 1;
+
+            // Find row and col for this hex
+            let hexRow = -1;
+            let hexCol = -1;
+            let currentIndex = 0;
+
+            for (let r = 0; r < rows.length; r++) {
+                for (let c = 0; c < rows[r].count; c++) {
+                    if (currentIndex === hexIdx) {
+                        hexRow = r;
+                        hexCol = c;
+                        break;
+                    }
+                    currentIndex++;
+                }
+                if (hexRow !== -1) break;
+            }
+
+            if (hexRow === -1 || hexCol === -1) {
+                console.log(`Port ${idx} (hex ${location.hexIndex}): Could not find row/col`);
+                return;
+            }
+
+            // Get vertices for this hex
+            const vertices = getHexVerticesAt(hexRow, hexCol);
+            if (!vertices) {
+                console.log(`Port ${idx} (hex ${location.hexIndex}): No vertices found`);
+                return;
+            }
+
+            const v1 = vertices[location.vertex1];
+            const v2 = vertices[location.vertex2];
+
+            if (!v1 || !v2) {
+                console.log(`Port ${idx} (hex ${location.hexIndex}): Missing vertex - v1:`, v1, 'v2:', v2);
+                return;
+            }
+
+            // Calculate midpoint and rotation
+            const midX = (v1.x + v2.x) / 2;
+            const midY = (v1.y + v2.y) / 2;
+            const angle = Math.atan2(v2.y - v1.y, v2.x - v1.x) * (180 / Math.PI) + 180;
+
+            const portType = generateFourIslandsPortAssignments[idx];
+            console.log(`Port ${idx} at hex ${location.hexIndex}: row=${hexRow}, col=${hexCol}, pos=(${midX.toFixed(1)}, ${midY.toFixed(1)}), angle=${angle.toFixed(1)}, type=${portType}`);
+
+            if (!portType) {
+                console.error(`Port ${idx} has undefined portType! Assignments length: ${generateFourIslandsPortAssignments.length}`);
+                return;
+            }
+
+            placements.push({
+                x: midX,
+                y: midY,
+                angle,
+                portType,
+            });
+        });
+
+        console.log(`Total 4-islands ports placed: ${placements.length}/9`);
+        return placements;
+    }, [scenario, generateFourIslandsPortAssignments, randomSeed]);
+
     return (
         <main
             className="h-screen w-screen flex flex-col items-center justify-center overflow-hidden"
@@ -2097,6 +2508,43 @@ export default function CatanPage() {
                         </div>
                     )}
 
+                    {/* 4-Islands Ports */}
+                    {expansion === 'seafarers' && scenario === '4-islands' && fourIslandsPortPlacements.length > 0 && (
+                        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+                            {fourIslandsPortPlacements.map((placement, idx) => {
+                                const boatImage = `/images/catan_boat_${placement.portType}.png`;
+                                const portSize = hexWidth * 1.4;
+                                const portOffset = portSize / 2;
+
+                                return (
+                                    <div
+                                        key={`4-islands-port-${idx}`}
+                                        style={{
+                                            position: 'absolute',
+                                            left: `${placement.x - portOffset}px`,
+                                            top: `${placement.y - portOffset}px`,
+                                            width: `${portSize}px`,
+                                            height: `${portSize}px`,
+                                            transform: `rotate(${placement.angle}deg)`,
+                                            transformOrigin: 'center',
+                                        }}
+                                    >
+                                        <img
+                                            src={boatImage}
+                                            alt={`Port ${placement.portType}`}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'contain',
+                                                pointerEvents: 'none',
+                                            }}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
                     {/* Water hex borders - separate layer below hex content */}
                     <svg
                         style={{
@@ -2282,29 +2730,6 @@ export default function CatanPage() {
                                 </div>
                             )}
 
-                            {/* Hex index label for 4-islands scenario (temporary for debugging) */}
-                            {scenario === '4-islands' && (
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        top: '10%',
-                                        left: '50%',
-                                        transform: expansion === 'seafarers'
-                                            ? 'translate(-50%, -50%) rotate(-90deg)'
-                                            : 'translate(-50%, -50%)',
-                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                        padding: '2px 6px',
-                                        borderRadius: '4px',
-                                        fontSize: '12px',
-                                        fontWeight: 'bold',
-                                        color: '#000',
-                                        border: '1px solid #333',
-                                        zIndex: 100,
-                                    }}
-                                >
-                                    {index + 1}
-                                </div>
-                            )}
 
                         </div>
                     ))}
@@ -2358,17 +2783,15 @@ export default function CatanPage() {
                             </select>
                         </div>
 
-                        {scenario !== '4-islands' && (
-                            <button
-                                onClick={() => setPlayerCount(3)}
-                                className={`w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors text-left ${playerCount === 3
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                    : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
-                                    }`}
-                            >
-                                3 Players
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setPlayerCount(3)}
+                            className={`w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors text-left ${playerCount === 3
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+                                }`}
+                        >
+                            3 Players
+                        </button>
 
                         <button
                             onClick={() => setPlayerCount(4)}
@@ -2380,17 +2803,15 @@ export default function CatanPage() {
                             4 Players
                         </button>
 
-                        {scenario !== '4-islands' && (
-                            <button
-                                onClick={() => setPlayerCount(6)}
-                                className={`w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors text-left ${playerCount === 6
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                    : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
-                                    }`}
-                            >
-                                6 Players
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setPlayerCount(6)}
+                            className={`w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors text-left ${playerCount === 6
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+                                }`}
+                        >
+                            6 Players
+                        </button>
                     </>
                 )}
             </GameSettingsPanel>

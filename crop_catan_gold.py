@@ -64,3 +64,4 @@ def crop_white_border(image_path, output_path=None, white_threshold=240, padding
 if __name__ == "__main__":
     # Crop the catan gold image
     crop_white_border('public/images/catan_gold.jpg')
+

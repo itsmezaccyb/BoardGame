@@ -146,3 +146,4 @@ INSERT INTO images (image_list_id, image_path) VALUES
 ((SELECT id FROM image_lists WHERE folder = 'sam'), '/codenames/image-lists/sam/received_842472939905028_Original.JPG'),
 ((SELECT id FROM image_lists WHERE folder = 'sam'), '/codenames/image-lists/sam/received_1280851625700226_Original.JPG'),
 ((SELECT id FROM image_lists WHERE folder = 'sam'), '/codenames/image-lists/sam/received_1574957989526794~2_Original.JPG');
+

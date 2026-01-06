@@ -407,3 +407,4 @@ INSERT INTO words (word_list_id, word) VALUES
 ((SELECT id FROM word_lists WHERE name = 'Standard'), 'WITCH'),
 ((SELECT id FROM word_lists WHERE name = 'Standard'), 'WORM'),
 ((SELECT id FROM word_lists WHERE name = 'Standard'), 'YARD');
+

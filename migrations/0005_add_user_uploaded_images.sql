@@ -54,3 +54,4 @@ CREATE POLICY "Allow users to delete their own images" ON images
 CREATE INDEX IF NOT EXISTS idx_image_lists_created_by ON image_lists(created_by);
 CREATE INDEX IF NOT EXISTS idx_image_lists_is_user_created ON image_lists(is_user_created);
 CREATE INDEX IF NOT EXISTS idx_images_uploaded_by ON images(uploaded_by);
+

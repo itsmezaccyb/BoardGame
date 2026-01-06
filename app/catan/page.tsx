@@ -23,6 +23,7 @@ export default function CatanPage() {
     const [playerCount, setPlayerCount] = useState<3 | 4 | 6 | '5-6'>(4);
     const [scenario, setScenario] = useState<ScenarioType>('heading-for-new-shores');
     const [randomSeed, setRandomSeed] = useState(0);
+    const [citiesAndKnights, setCitiesAndKnights] = useState<boolean>(false);
 
     // Auto-randomize on mount, player count change, and scenario change
     useEffect(() => {
@@ -2568,6 +2569,79 @@ export default function CatanPage() {
                         ))}
                     </svg>
 
+                    {/* Barbarian ship track - Cities & Knights expansion */}
+                    {citiesAndKnights && (() => {
+                        // For 3-player rotated board, we need to adjust positioning
+                        const isRotated = playerCount === 3;
+
+                        if (isRotated) {
+                            // When rotated 90deg clockwise, top becomes left
+                            // Position at top of rotated board (which appears on the left visually)
+                            const maxY = Math.max(...hexes.map(hex => hex.y + hexHeight));
+                            const trackTop = maxY + 100;
+
+                            return (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        left: '50%',
+                                        top: `${trackTop}px`,
+                                        transform: 'translateX(-50%)',
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                        gap: '8px',
+                                        zIndex: 10,
+                                    }}
+                                >
+                                    {Array.from({ length: 8 }).map((_, index) => (
+                                        <div
+                                            key={`barbarian-${index}`}
+                                            style={{
+                                                width: '40px',
+                                                height: '40px',
+                                                borderRadius: '50%',
+                                                border: '1.5px solid #bfdbfe',
+                                                backgroundColor: index === 0 ? '#bfdbfe' : 'transparent',
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            );
+                        } else {
+                            // Normal positioning for non-rotated boards
+                            const minX = Math.min(...hexes.map(hex => hex.x));
+                            const trackLeft = minX - 100;
+
+                            return (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${trackLeft}px`,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '8px',
+                                        zIndex: 10,
+                                    }}
+                                >
+                                    {Array.from({ length: 8 }).map((_, index) => (
+                                        <div
+                                            key={`barbarian-${index}`}
+                                            style={{
+                                                width: '40px',
+                                                height: '40px',
+                                                borderRadius: '50%',
+                                                border: '1.5px solid #bfdbfe',
+                                                backgroundColor: index === 0 ? '#bfdbfe' : 'transparent',
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            );
+                        }
+                    })()}
+
                     {hexes.map((hex, index) => (
                         <div
                             key={hex.id}
@@ -2746,6 +2820,20 @@ export default function CatanPage() {
                 >
                     Randomize
                 </button>
+
+                {/* Cities & Knights checkbox - available for both Classic and Seafarers */}
+                <div className="flex items-center gap-2 px-2 py-2">
+                    <input
+                        type="checkbox"
+                        id="cities-and-knights"
+                        checked={citiesAndKnights}
+                        onChange={(e) => setCitiesAndKnights(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300"
+                    />
+                    <label htmlFor="cities-and-knights" className="text-sm font-medium text-gray-700">
+                        Cities & Knights
+                    </label>
+                </div>
 
                 {expansion === 'classic' ? (
                     <>

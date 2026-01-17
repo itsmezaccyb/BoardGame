@@ -65,3 +65,4 @@ if __name__ == "__main__":
     # Crop the catan gold image
     crop_white_border('public/images/catan_gold.jpg')
 
+

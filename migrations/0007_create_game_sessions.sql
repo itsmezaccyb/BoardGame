@@ -33,3 +33,4 @@ CREATE TRIGGER update_game_sessions_updated_at
     BEFORE UPDATE ON game_sessions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+

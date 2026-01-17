@@ -12,3 +12,4 @@ CREATE INDEX IF NOT EXISTS idx_image_lists_name ON image_lists(name);
 -- Add a partial unique index to prevent duplicate folders
 CREATE UNIQUE INDEX IF NOT EXISTS idx_image_lists_folder_unique ON image_lists(folder);
 
+

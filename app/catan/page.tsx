@@ -25,10 +25,20 @@ export default function CatanPage() {
     const [randomSeed, setRandomSeed] = useState(0);
     const [citiesAndKnights, setCitiesAndKnights] = useState<boolean>(false);
 
+    // Number swapping state
+    const [selectedHexId, setSelectedHexId] = useState<string | null>(null);
+    const [numberSwaps, setNumberSwaps] = useState<Map<string, number>>(new Map());
+
     // Auto-randomize on mount, player count change, and scenario change
     useEffect(() => {
         setRandomSeed(Math.random() * 10000);
     }, [playerCount, scenario]);
+
+    // Clear number swaps when board configuration changes
+    useEffect(() => {
+        setNumberSwaps(new Map());
+        setSelectedHexId(null);
+    }, [randomSeed, playerCount, expansion, scenario]);
 
     // 4-islands scenario supports 3 and 4 players
     // No forced player count restriction
@@ -248,6 +258,13 @@ export default function CatanPage() {
             6: 5, 8: 5,
         };
         return dotMap[number] || 0;
+    };
+
+    // ========== NUMBER SWAPPING HELPER FUNCTIONS ==========
+
+    // Get the effective number for a hex (swapped number if exists, otherwise original)
+    const getEffectiveNumber = (hexId: string, originalNumber: number | undefined): number | undefined => {
+        return numberSwaps.get(hexId) ?? originalNumber;
     };
 
     // ========== REUSABLE UTILITY FUNCTIONS ==========
@@ -2093,6 +2110,38 @@ export default function CatanPage() {
         return placements;
     }, [scenario, generateFourIslandsPortAssignments, randomSeed]);
 
+    // Handle number token click for swapping
+    const handleNumberTokenClick = (hex: Hex) => {
+        // Only allow clicking on hexes with numbers
+        const effectiveNumber = getEffectiveNumber(hex.id, hex.number);
+        if (effectiveNumber === undefined) return;
+
+        if (selectedHexId === null) {
+            // First selection
+            setSelectedHexId(hex.id);
+        } else if (selectedHexId === hex.id) {
+            // Clicking same hex - deselect
+            setSelectedHexId(null);
+        } else {
+            // Second selection - perform swap
+            const selectedHex = hexes.find(h => h.id === selectedHexId);
+            if (selectedHex) {
+                const num1 = getEffectiveNumber(selectedHex.id, selectedHex.number);
+                const num2 = getEffectiveNumber(hex.id, hex.number);
+
+                if (num1 !== undefined && num2 !== undefined) {
+                    // Update the swaps map
+                    const newSwaps = new Map(numberSwaps);
+                    newSwaps.set(selectedHex.id, num2);
+                    newSwaps.set(hex.id, num1);
+                    setNumberSwaps(newSwaps);
+                }
+            }
+            // Clear selection
+            setSelectedHexId(null);
+        }
+    };
+
     return (
         <main
             className="h-screen w-screen flex flex-col items-center justify-center overflow-hidden"
@@ -2746,63 +2795,72 @@ export default function CatanPage() {
                             </svg>
 
                             {/* Number token */}
-                            {hex.number !== undefined && (
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: expansion === 'seafarers'
-                                            ? 'translate(-50%, -50%) rotate(-90deg)'
-                                            : 'translate(-50%, -50%)',
-                                        width: `${hexWidth * 0.35}px`,
-                                        height: `${hexWidth * 0.35}px`,
-                                        backgroundColor: '#f5f5dc',
-                                        borderRadius: '50%',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        border: 'none',
-                                        zIndex: 10,
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            fontSize: `${hexWidth * 0.18}px`,
-                                            fontWeight: 'bold',
-                                            color: hex.number === 6 || hex.number === 8 ? '#d32f2f' : '#000',
-                                            fontFamily: 'Arial, sans-serif',
-                                            lineHeight: 1,
-                                        }}
-                                    >
-                                        {hex.number}
-                                    </span>
-                                    {/* Probability dots */}
+                            {hex.number !== undefined && (() => {
+                                const effectiveNumber = getEffectiveNumber(hex.id, hex.number);
+                                const isSelected = selectedHexId === hex.id;
+                                return (
                                     <div
+                                        onClick={() => handleNumberTokenClick(hex)}
                                         style={{
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: expansion === 'seafarers'
+                                                ? 'translate(-50%, -50%) rotate(-90deg)'
+                                                : 'translate(-50%, -50%)',
+                                            width: `${hexWidth * 0.35}px`,
+                                            height: `${hexWidth * 0.35}px`,
+                                            backgroundColor: isSelected ? '#87ceeb' : '#f5f5dc',
+                                            borderRadius: '50%',
                                             display: 'flex',
-                                            gap: '2px',
-                                            marginTop: '2px',
-                                            justifyContent: 'center',
+                                            flexDirection: 'column',
                                             alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: isSelected ? '3px solid #4169e1' : 'none',
+                                            zIndex: 10,
+                                            boxShadow: isSelected
+                                                ? '0 0 12px rgba(65, 105, 225, 0.6)'
+                                                : '0 2px 4px rgba(0,0,0,0.3)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
                                         }}
                                     >
-                                        {Array.from({ length: getDotCount(hex.number) }).map((_, i) => (
-                                            <div
-                                                key={i}
-                                                style={{
-                                                    width: '3px',
-                                                    height: '3px',
-                                                    borderRadius: '50%',
-                                                    backgroundColor: '#000',
-                                                }}
-                                            />
-                                        ))}
+                                        <span
+                                            style={{
+                                                fontSize: `${hexWidth * 0.18}px`,
+                                                fontWeight: 'bold',
+                                                color: (effectiveNumber === 6 || effectiveNumber === 8) ? '#d32f2f' : '#000',
+                                                fontFamily: 'Arial, sans-serif',
+                                                lineHeight: 1,
+                                            }}
+                                        >
+                                            {effectiveNumber}
+                                        </span>
+                                        {/* Probability dots */}
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                gap: '2px',
+                                                marginTop: '2px',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                            }}
+                                        >
+                                            {effectiveNumber !== undefined && Array.from({ length: getDotCount(effectiveNumber) }).map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{
+                                                        width: '3px',
+                                                        height: '3px',
+                                                        borderRadius: '50%',
+                                                        backgroundColor: '#000',
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
 
 
                         </div>

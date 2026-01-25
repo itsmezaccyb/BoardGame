@@ -2426,14 +2426,15 @@ export default function CatanPage() {
                             );
                         } else {
                             const minX = Math.min(...hexes.map(hex => hex.x));
-                            const trackLeft = minX - 220;
+                            const trackLeft = minX - 280;
+                            const topOffset = expansion === 'seafarers' ? 'calc(50% - 40px)' : '50%';
 
                             return (
                                 <div
                                     style={{
                                         position: 'absolute',
                                         left: `${trackLeft}px`,
-                                        top: '50%',
+                                        top: topOffset,
                                         transform: 'translateY(-50%)',
                                         display: 'grid',
                                         gridTemplateColumns: 'repeat(2, 1fr)',

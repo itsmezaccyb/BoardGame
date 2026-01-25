@@ -2409,14 +2409,14 @@ export default function CatanPage() {
                                                 width: '80px',
                                                 height: '80px',
                                                 borderRadius: '50%',
-                                                border: '2px solid #60a5fa',
-                                                backgroundColor: index === 7 ? '#60a5fa' : 'transparent',
+                                                border: '2px solid #ffffff',
+                                                backgroundColor: index === 7 ? '#ffffff' : 'transparent',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 fontSize: '28px',
                                                 fontWeight: 'bold',
-                                                color: '#60a5fa',
+                                                color: '#ffffff',
                                             }}
                                         >
                                             {index === 7 ? '' : index + 1}
@@ -2449,14 +2449,14 @@ export default function CatanPage() {
                                                 width: '80px',
                                                 height: '80px',
                                                 borderRadius: '50%',
-                                                border: '2px solid #60a5fa',
-                                                backgroundColor: index === 7 ? '#60a5fa' : 'transparent',
+                                                border: '2px solid #ffffff',
+                                                backgroundColor: index === 7 ? '#ffffff' : 'transparent',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 fontSize: '28px',
                                                 fontWeight: 'bold',
-                                                color: '#60a5fa',
+                                                color: '#ffffff',
                                             }}
                                         >
                                             {index === 7 ? '' : index + 1}

@@ -2426,7 +2426,7 @@ export default function CatanPage() {
                             );
                         } else {
                             const minX = Math.min(...hexes.map(hex => hex.x));
-                            const trackLeft = minX - 100;
+                            const trackLeft = minX - 220;
 
                             return (
                                 <div

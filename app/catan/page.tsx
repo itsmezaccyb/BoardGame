@@ -2450,33 +2450,6 @@ export default function CatanPage() {
                         }
                     })()}
 
-                    {/* Building Costs Legends */}
-                    {(() => {
-                        const minX = Math.min(...hexes.map(hex => hex.x));
-                        const legendSpacing = 20;
-                        const estimatedLegendWidth = citiesAndKnights ? 400 : 350;
-
-                        return (
-                            <>
-                                <BuildingCostsLegend
-                                    expansion={expansion}
-                                    citiesAndKnights={citiesAndKnights}
-                                    position="bottom-left"
-                                    left={minX - estimatedLegendWidth - legendSpacing}
-                                    bottom={0}
-                                />
-
-                                <BuildingCostsLegend
-                                    expansion={expansion}
-                                    citiesAndKnights={citiesAndKnights}
-                                    position="top-right"
-                                    right={0}
-                                    top={0}
-                                />
-                            </>
-                        );
-                    })()}
-
                     {hexes.map((hex, index) => (
                         <div
                             key={hex.id}
@@ -2737,6 +2710,27 @@ export default function CatanPage() {
                     </>
                 )}
             </GameSettingsPanel>
+
+            {/* Fixed Building Costs Legends - positioned at screen corners */}
+            <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 50 }}>
+                <div style={{ transform: 'scale(2)', transformOrigin: 'bottom left' }}>
+                    <BuildingCostsLegend
+                        expansion={expansion}
+                        citiesAndKnights={citiesAndKnights}
+                        position="bottom-left"
+                    />
+                </div>
+            </div>
+
+            <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 50 }}>
+                <div style={{ transform: 'scale(2)', transformOrigin: 'top right' }}>
+                    <BuildingCostsLegend
+                        expansion={expansion}
+                        citiesAndKnights={citiesAndKnights}
+                        position="top-right"
+                    />
+                </div>
+            </div>
         </main>
     );
 }

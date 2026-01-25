@@ -8,20 +8,12 @@ interface BuildingCostsLegendProps {
   expansion: 'classic' | 'seafarers';
   citiesAndKnights: boolean;
   position: 'bottom-left' | 'top-right';
-  left?: number;
-  top?: number;
-  right?: number;
-  bottom?: number;
 }
 
 export function BuildingCostsLegend({
   expansion,
   citiesAndKnights,
-  position,
-  left,
-  top,
-  right,
-  bottom
+  position
 }: BuildingCostsLegendProps) {
   const buildings = getBuildingsForVariant(expansion, citiesAndKnights);
   const isRotated = position === 'top-right';
@@ -32,13 +24,7 @@ export function BuildingCostsLegend({
   return (
     <div
       style={{
-        position: 'absolute',
-        left: left !== undefined ? `${left}px` : undefined,
-        top: top !== undefined ? `${top}px` : undefined,
-        right: right !== undefined ? `${right}px` : undefined,
-        bottom: bottom !== undefined ? `${bottom}px` : undefined,
         transform: isRotated ? 'rotate(180deg)' : undefined,
-        zIndex: 10,
       }}
       className={`rounded-lg border-2 border-amber-800 bg-white/90 backdrop-blur-sm shadow-xl ${
         isCompact ? 'p-2' : 'p-3'

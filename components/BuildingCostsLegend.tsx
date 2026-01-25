@@ -27,7 +27,7 @@ export function BuildingCostsLegend({
         transform: isRotated ? 'rotate(180deg)' : undefined,
       }}
       className={`rounded-lg border-2 border-amber-800 bg-white/90 backdrop-blur-sm shadow-xl ${
-        isCompact ? 'p-2' : 'p-3'
+        isCompact ? 'p-1.5' : 'p-2'
       }`}
     >
       {/* Title */}
@@ -38,7 +38,7 @@ export function BuildingCostsLegend({
       </div>
 
       {/* Building rows */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-0.5">
         {buildings.map((building) => (
           <BuildingRow
             key={building.id}
@@ -57,7 +57,7 @@ interface BuildingRowProps {
 }
 
 function BuildingRow({ building, isCompact }: BuildingRowProps) {
-  const iconSize = isCompact ? 16 : 20;
+  const iconSize = isCompact ? 32 : 36;
   const textSize = isCompact ? 'text-xs' : 'text-sm';
 
   // Determine color based on commodity type
@@ -71,16 +71,16 @@ function BuildingRow({ building, isCompact }: BuildingRowProps) {
   }
 
   return (
-    <div className={`flex items-center gap-2 ${textSize}`}>
+    <div className={`flex items-center gap-1.5 ${textSize}`}>
       {/* Building name */}
       <div className={`font-semibold ${nameColor} ${isCompact ? 'w-24' : 'w-32'} flex-shrink-0`}>
         {building.name}
       </div>
 
       {/* Resources */}
-      <div className="flex items-center gap-1 flex-grow">
+      <div className="flex items-center gap-0.5 flex-grow">
         {building.costs.map((cost, idx) => (
-          <div key={`${cost.resource}-${idx}`} className="flex items-center gap-0.5">
+          <div key={`${cost.resource}-${idx}`} className="flex items-center gap-0">
               {RESOURCE_LOGOS[cost.resource] ? (
                 // Repeat resource icons based on amount
                 Array.from({ length: cost.amount }).map((_, iconIdx) => (
@@ -114,8 +114,10 @@ function BuildingRow({ building, isCompact }: BuildingRowProps) {
 
       {/* Victory Points */}
       <div className={`text-gray-600 ${isCompact ? 'w-12' : 'w-14'} text-right flex-shrink-0`}>
-        {building.victoryPoints === -1
+        {building.victoryPoints === -1 && building.showVPPerLevel
           ? 'per lvl'
+          : building.victoryPoints === -1
+          ? ''
           : `${building.victoryPoints}`
         }
       </div>

@@ -2712,7 +2712,7 @@ export default function CatanPage() {
             </GameSettingsPanel>
 
             {/* Fixed Building Costs Legends - positioned at screen corners */}
-            <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 50 }}>
+            <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 30 }}>
                 <div style={{ transform: 'scale(2)', transformOrigin: 'bottom left' }}>
                     <BuildingCostsLegend
                         expansion={expansion}
@@ -2722,7 +2722,7 @@ export default function CatanPage() {
                 </div>
             </div>
 
-            <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 50 }}>
+            <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 30 }}>
                 <div style={{ transform: 'scale(2)', transformOrigin: 'top right' }}>
                     <BuildingCostsLegend
                         expansion={expansion}

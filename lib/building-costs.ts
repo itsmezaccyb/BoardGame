@@ -11,6 +11,7 @@ export interface BuildingCost {
   costs: ResourceCost[];
   victoryPoints: number; // -1 means "varies"
   commodityType?: 'science' | 'trade' | 'politics'; // For city improvements
+  showVPPerLevel?: boolean; // If true, show "per lvl", otherwise just show the number
 }
 
 export const BASE_BUILDINGS: BuildingCost[] = [
@@ -51,7 +52,8 @@ export const BASE_BUILDINGS: BuildingCost[] = [
       { resource: 'sheep', amount: 1 },
       { resource: 'ore', amount: 1 }
     ],
-    victoryPoints: -1 // varies
+    victoryPoints: -1, // varies
+    showVPPerLevel: false
   }
 ];
 
@@ -109,7 +111,8 @@ export const CITIES_AND_KNIGHTS_BUILDINGS: BuildingCost[] = [
       { resource: 'paper', amount: 1 }
     ],
     victoryPoints: -1, // varies by level
-    commodityType: 'science'
+    commodityType: 'science',
+    showVPPerLevel: true
   },
   {
     id: 'trade-improvement',
@@ -118,7 +121,8 @@ export const CITIES_AND_KNIGHTS_BUILDINGS: BuildingCost[] = [
       { resource: 'cloth', amount: 1 }
     ],
     victoryPoints: -1, // varies by level
-    commodityType: 'trade'
+    commodityType: 'trade',
+    showVPPerLevel: true
   },
   {
     id: 'politics-improvement',
@@ -127,7 +131,8 @@ export const CITIES_AND_KNIGHTS_BUILDINGS: BuildingCost[] = [
       { resource: 'coin', amount: 1 }
     ],
     victoryPoints: -1, // varies by level
-    commodityType: 'politics'
+    commodityType: 'politics',
+    showVPPerLevel: true
   }
 ];
 

@@ -2409,14 +2409,14 @@ export default function CatanPage() {
                                                 width: '80px',
                                                 height: '80px',
                                                 borderRadius: '50%',
-                                                border: '2px solid #bfdbfe',
-                                                backgroundColor: index === 7 ? '#bfdbfe' : 'transparent',
+                                                border: '2px solid #60a5fa',
+                                                backgroundColor: index === 7 ? '#60a5fa' : 'transparent',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 fontSize: '28px',
                                                 fontWeight: 'bold',
-                                                color: '#bfdbfe',
+                                                color: '#60a5fa',
                                             }}
                                         >
                                             {index === 7 ? '' : index + 1}
@@ -2426,7 +2426,7 @@ export default function CatanPage() {
                             );
                         } else {
                             const minX = Math.min(...hexes.map(hex => hex.x));
-                            const trackLeft = minX - 280;
+                            const trackLeft = minX - 300;
                             const topOffset = expansion === 'seafarers' ? 'calc(50% - 40px)' : '50%';
 
                             return (
@@ -2449,14 +2449,14 @@ export default function CatanPage() {
                                                 width: '80px',
                                                 height: '80px',
                                                 borderRadius: '50%',
-                                                border: '2px solid #bfdbfe',
-                                                backgroundColor: index === 7 ? '#bfdbfe' : 'transparent',
+                                                border: '2px solid #60a5fa',
+                                                backgroundColor: index === 7 ? '#60a5fa' : 'transparent',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 fontSize: '28px',
                                                 fontWeight: 'bold',
-                                                color: '#bfdbfe',
+                                                color: '#60a5fa',
                                             }}
                                         >
                                             {index === 7 ? '' : index + 1}

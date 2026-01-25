@@ -19,3 +19,6 @@ CREATE POLICY "Allow users to delete their own uploads" ON storage.objects
   FOR DELETE USING (bucket_id = 'codenames-images' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 
+
+
+

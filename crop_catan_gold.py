@@ -66,3 +66,6 @@ if __name__ == "__main__":
     crop_white_border('public/images/catan_gold.jpg')
 
 
+
+
+

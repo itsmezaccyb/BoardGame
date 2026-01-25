@@ -3,6 +3,7 @@
 import { inchesToPixels } from '@/lib/dimensions';
 import { useState, useMemo, useEffect } from 'react';
 import { GameSettingsPanel } from '@/components/GameSettingsPanel';
+import { BuildingCostsLegend } from '@/components/BuildingCostsLegend';
 import { getImageUrl } from '@/lib/image-mapping';
 
 type ResourceType = 'forest' | 'pasture' | 'field' | 'mountain' | 'hill' | 'desert' | 'gold' | 'water';
@@ -25,25 +26,17 @@ export default function CatanPage() {
     const [randomSeed, setRandomSeed] = useState(0);
     const [citiesAndKnights, setCitiesAndKnights] = useState<boolean>(false);
 
-    // Number swapping state
     const [selectedHexId, setSelectedHexId] = useState<string | null>(null);
     const [numberSwaps, setNumberSwaps] = useState<Map<string, number>>(new Map());
 
-    // Auto-randomize on mount, player count change, and scenario change
     useEffect(() => {
         setRandomSeed(Math.random() * 10000);
     }, [playerCount, scenario]);
 
-    // Clear number swaps when board configuration changes
     useEffect(() => {
         setNumberSwaps(new Map());
         setSelectedHexId(null);
     }, [randomSeed, playerCount, expansion, scenario]);
-
-    // 4-islands scenario supports 3 and 4 players
-    // No forced player count restriction
-
-    // Resource image mapping
     const resourceImages: Record<ResourceType, string> = {
         forest: getImageUrl('/images/catan_woods.png'),
         pasture: getImageUrl('/images/catan_sheep.png'),
@@ -55,7 +48,6 @@ export default function CatanPage() {
         water: '', // Clear/transparent for water tiles since background is sea
     };
 
-    // Resource counts for each expansion and player mode
     const getResourceCounts = () => {
         if (expansion === 'classic') {
             return playerCount === 4 ? {
@@ -115,12 +107,10 @@ export default function CatanPage() {
         }
     };
 
-    // Hexagon dimensions based on Catan specifications (scaled to 0.9)
     const hexWidth = inchesToPixels(3.12 * 0.9);
     const hexHeight = inchesToPixels(3.6 * 0.9);
-    const verticalSpacing = hexHeight * 0.75; // 25% overlap for interlocking
+    const verticalSpacing = hexHeight * 0.75;
 
-    // Row configurations for different expansions and player counts
     const getRowConfigurations = () => {
         if (expansion === 'classic') {
             return playerCount === 4 ? [
@@ -138,63 +128,57 @@ export default function CatanPage() {
                 { count: 4, offset: 0.5 },
             ];
         } else {
-            // Seafarers scenarios
             if (scenario === '4-islands') {
                 if (playerCount === 6) {
-                    // 6-player 4-islands: 7-8-9-10-9-8-7 (58 hexes)
                     return [
-                        { count: 7, offset: 1.5 },    // row 0
-                        { count: 8, offset: 1 },      // row 1
-                        { count: 9, offset: 0.5 },    // row 2
-                        { count: 10, offset: 0 },     // row 3
-                        { count: 9, offset: 0.5 },    // row 4
-                        { count: 8, offset: 1 },      // row 5
-                        { count: 7, offset: 1.5 },    // row 6
+                        { count: 7, offset: 1.5 },
+                        { count: 8, offset: 1 },
+                        { count: 9, offset: 0.5 },
+                        { count: 10, offset: 0 },
+                        { count: 9, offset: 0.5 },
+                        { count: 8, offset: 1 },
+                        { count: 7, offset: 1.5 },
                     ];
                 } else {
-                    // 3-player and 4-player 4-islands: 4-5-6-7-6-5-4 (37 hexes)
                     return [
-                        { count: 4, offset: 1.5 },    // row 0
-                        { count: 5, offset: 1 },      // row 1
-                        { count: 6, offset: 0.5 },    // row 2
-                        { count: 7, offset: 0 },      // row 3
-                        { count: 6, offset: 0.5 },    // row 4
-                        { count: 5, offset: 1 },      // row 5
-                        { count: 4, offset: 1.5 },    // row 6
+                        { count: 4, offset: 1.5 },
+                        { count: 5, offset: 1 },
+                        { count: 6, offset: 0.5 },
+                        { count: 7, offset: 0 },
+                        { count: 6, offset: 0.5 },
+                        { count: 5, offset: 1 },
+                        { count: 4, offset: 1.5 },
                     ];
                 }
             } else if (playerCount === 3) {
-                // 3-player "Heading for New Shores": 4-5-6-7-6-5-4
                 return [
-                    { count: 4, offset: 1.5 },    // row 0
-                    { count: 5, offset: 1 },      // row 1
-                    { count: 6, offset: 0.5 },    // row 2
-                    { count: 7, offset: 0 },      // row 3
-                    { count: 6, offset: 0.5 },    // row 4
-                    { count: 5, offset: 1 },      // row 5
-                    { count: 4, offset: 1.5 },    // row 6
+                    { count: 4, offset: 1.5 },
+                    { count: 5, offset: 1 },
+                    { count: 6, offset: 0.5 },
+                    { count: 7, offset: 0 },
+                    { count: 6, offset: 0.5 },
+                    { count: 5, offset: 1 },
+                    { count: 4, offset: 1.5 },
                 ];
             } else if (playerCount === 6) {
-                // 6-player "Heading for New Shores": 7-8-9-10-9-8-7
                 return [
-                    { count: 7, offset: 1.5 },    // row 0
-                    { count: 8, offset: 1 },      // row 1
-                    { count: 9, offset: 0.5 },    // row 2
-                    { count: 10, offset: 0 },     // row 3
-                    { count: 9, offset: 0.5 },    // row 4
-                    { count: 8, offset: 1 },      // row 5
-                    { count: 7, offset: 1.5 },    // row 6
+                    { count: 7, offset: 1.5 },
+                    { count: 8, offset: 1 },
+                    { count: 9, offset: 0.5 },
+                    { count: 10, offset: 0 },
+                    { count: 9, offset: 0.5 },
+                    { count: 8, offset: 1 },
+                    { count: 7, offset: 1.5 },
                 ];
             } else {
-                // 4-player "Heading for New Shores": 5-6-7-8-7-6-5
                 return [
-                    { count: 5, offset: 1.5 },    // row 0
-                    { count: 6, offset: 1 },      // row 1
-                    { count: 7, offset: 0.5 },    // row 2
-                    { count: 8, offset: 0 },      // row 3
-                    { count: 7, offset: 0.5 },    // row 4
-                    { count: 6, offset: 1 },      // row 5
-                    { count: 5, offset: 1.5 },    // row 6
+                    { count: 5, offset: 1.5 },
+                    { count: 6, offset: 1 },
+                    { count: 7, offset: 0.5 },
+                    { count: 8, offset: 0 },
+                    { count: 7, offset: 0.5 },
+                    { count: 6, offset: 1 },
+                    { count: 5, offset: 1.5 },
                 ];
             }
         }
@@ -202,34 +186,24 @@ export default function CatanPage() {
 
     const rows = getRowConfigurations();
 
-    // Seeded random number generator for reproducibility
     const seededRandom = (seed: number, index: number) => {
         const x = Math.sin(seed + index) * 10000;
         return x - Math.floor(x);
     };
 
-    // Number distribution: 2-12 (skipping 7)
     const getNumberDistribution = () => {
         if (expansion === 'seafarers') {
             if (playerCount === 3) {
-                // 3-player "Heading for New Shores": 21 numbered hexes
-                // Custom distribution: 2(1), 3(2),6(2),9(2),11(2), 4(3),5(3),8(3),10(3)
                 return {
                     2: 1, 3: 2, 4: 3, 5: 3, 6: 2,
                     8: 3, 9: 2, 10: 3, 11: 2, 12: 1
                 };
             } else if (playerCount === 6) {
-                // 6-player "Heading for New Shores": 2&12(3), 3-11(4)
                 return {
                     2: 3, 3: 4, 4: 4, 5: 4, 6: 4,
                     8: 4, 9: 4, 10: 4, 11: 4, 12: 3
                 };
             } else {
-                // 4-player "Heading for New Shores": 27 numbered hexes
-                // Big island (18 numbers): 2,12 (1 each) + 3-11 (2 each) = 20, need to adjust
-                // Small islands (9 numbers): 2-11 (1 each) = 9
-                // Adjusted: Big gets 2,12 + 3,4,5,6,8,9,10,11 (8 numbers × 2 = 16) + 2 extras
-                // Small gets 2,3,4,5,6,8,9,10,11 (8 numbers) + 1 extra
                 return {
                     2: 2, 3: 3, 4: 3, 5: 3, 6: 3,
                     8: 3, 9: 3, 10: 3, 11: 3, 12: 1
@@ -241,14 +215,12 @@ export default function CatanPage() {
             2: 1, 3: 2, 4: 2, 5: 2, 6: 2,
             8: 2, 9: 2, 10: 2, 11: 2, 12: 1
         } : {
-            // 5-6 players: one extra of each number
             2: 2, 3: 3, 4: 3, 5: 3, 6: 3,
             8: 3, 9: 3, 10: 3, 11: 3, 12: 2
         };
         return distribution;
     };
 
-    // Get dot count for probability indicator
     const getDotCount = (number: number): number => {
         const dotMap: Record<number, number> = {
             2: 1, 12: 1,
@@ -260,17 +232,10 @@ export default function CatanPage() {
         return dotMap[number] || 0;
     };
 
-    // ========== NUMBER SWAPPING HELPER FUNCTIONS ==========
-
-    // Get the effective number for a hex (swapped number if exists, otherwise original)
     const getEffectiveNumber = (hexId: string, originalNumber: number | undefined): number | undefined => {
         return numberSwaps.get(hexId) ?? originalNumber;
     };
 
-    // ========== REUSABLE UTILITY FUNCTIONS ==========
-    // These functions work with any layout structure, making them reusable across scenarios
-
-    // Get adjacent hex coordinates for a given position
     const getNeighbors = (rowIndex: number, colIndex: number, rows: Array<{ count: number; offset: number }>): Array<{ row: number; col: number }> => {
         const neighbors: Array<{ row: number; col: number }> = [];
         const row = rows[rowIndex];
@@ -278,18 +243,13 @@ export default function CatanPage() {
 
         const currentOffset = row.offset;
 
-        // Top-left and top-right neighbors
         if (rowIndex > 0) {
             const prevRow = rows[rowIndex - 1];
             if (prevRow) {
                 const prevOffset = prevRow.offset;
                 const offsetDiff = currentOffset - prevOffset;
 
-                // Determine neighbor column indices based on offset difference
-                // If current row is shifted right (larger offset), neighbors shift accordingly
                 if (offsetDiff > 0) {
-                    // Current row shifted right compared to previous row
-                    // Top-left at same col, top-right at col+1
                     if (colIndex < prevRow.count) {
                         neighbors.push({ row: rowIndex - 1, col: colIndex });
                     }
@@ -297,8 +257,6 @@ export default function CatanPage() {
                         neighbors.push({ row: rowIndex - 1, col: colIndex + 1 });
                     }
                 } else if (offsetDiff < 0) {
-                    // Current row shifted left compared to previous row
-                    // Top-left at col-1, top-right at same col
                     if (colIndex > 0 && colIndex - 1 < prevRow.count) {
                         neighbors.push({ row: rowIndex - 1, col: colIndex - 1 });
                     }
@@ -306,8 +264,6 @@ export default function CatanPage() {
                         neighbors.push({ row: rowIndex - 1, col: colIndex });
                     }
                 } else {
-                    // Same offset
-                    // Top-left at col-1, top-right at col
                     if (colIndex > 0 && colIndex - 1 < prevRow.count) {
                         neighbors.push({ row: rowIndex - 1, col: colIndex - 1 });
                     }
@@ -318,17 +274,14 @@ export default function CatanPage() {
             }
         }
 
-        // Left neighbor (same row)
         if (colIndex > 0) {
             neighbors.push({ row: rowIndex, col: colIndex - 1 });
         }
 
-        // Right neighbor (same row)
         if (colIndex + 1 < row.count) {
             neighbors.push({ row: rowIndex, col: colIndex + 1 });
         }
 
-        // Bottom-left and bottom-right neighbors
         if (rowIndex + 1 < rows.length) {
             const nextRow = rows[rowIndex + 1];
             if (nextRow) {
@@ -336,8 +289,6 @@ export default function CatanPage() {
                 const offsetDiff = currentOffset - nextOffset;
 
                 if (offsetDiff > 0) {
-                    // Current row shifted right compared to next row
-                    // Bottom-left at col-1, bottom-right at same col
                     if (colIndex > 0 && colIndex - 1 < nextRow.count) {
                         neighbors.push({ row: rowIndex + 1, col: colIndex - 1 });
                     }
@@ -345,8 +296,6 @@ export default function CatanPage() {
                         neighbors.push({ row: rowIndex + 1, col: colIndex });
                     }
                 } else if (offsetDiff < 0) {
-                    // Current row shifted left compared to next row
-                    // Bottom-left at same col, bottom-right at col+1
                     if (colIndex < nextRow.count) {
                         neighbors.push({ row: rowIndex + 1, col: colIndex });
                     }
@@ -354,8 +303,6 @@ export default function CatanPage() {
                         neighbors.push({ row: rowIndex + 1, col: colIndex + 1 });
                     }
                 } else {
-                    // Same offset
-                    // Bottom-left at col, bottom-right at col+1
                     if (colIndex < nextRow.count) {
                         neighbors.push({ row: rowIndex + 1, col: colIndex });
                     }
@@ -369,7 +316,6 @@ export default function CatanPage() {
         return neighbors;
     };
 
-    // Get hex at specific position from hexes array
     const getHexAt = (rowIndex: number, colIndex: number, hexesArray: Hex[], rows: Array<{ count: number; offset: number }>): Hex | null => {
         let hexIndex = 0;
         for (let r = 0; r < rowIndex; r++) {
@@ -379,7 +325,6 @@ export default function CatanPage() {
         return hexesArray[hexIndex] || null;
     };
 
-    // Convert flat array index to 2D row/col coordinates
     const getRowColFromIndex = (
         index: number,
         rows: Array<{ count: number; offset: number }>
@@ -400,7 +345,6 @@ export default function CatanPage() {
         return null;
     };
 
-    // Count adjacent resources of the same type
     const countAdjacentResources = (
         resourceType: ResourceType,
         rowIndex: number,
@@ -419,7 +363,6 @@ export default function CatanPage() {
         return count;
     };
 
-    // Check if placing a resource would create clumping (exceed max touching)
     const hasResourceClumping = (
         resourceType: ResourceType,
         rowIndex: number,
@@ -432,7 +375,6 @@ export default function CatanPage() {
         return adjacentCount > maxCount;
     };
 
-    // Check if placing a 6 or 8 would create adjacency with another 6 or 8
     const hasHighNumberAdjacency = (
         number: number,
         rowIndex: number,
@@ -440,7 +382,6 @@ export default function CatanPage() {
         hexesArray: Hex[],
         rows: Array<{ count: number; offset: number }>
     ): boolean => {
-        // Only check for 6s and 8s
         if (number !== 6 && number !== 8) {
             return false;
         }
@@ -457,14 +398,12 @@ export default function CatanPage() {
         return false;
     };
 
-    // Assign numbers with constraint that 6s and 8s cannot be adjacent
     const assignNumbersWithConstraints = (
         hexesArray: Hex[],
         numbersArray: number[],
         rows: Array<{ count: number; offset: number }>,
         seed: number
     ): boolean => {
-        // Create list of hexes that need numbers
         const hexesToNumber: Array<{ index: number }> = [];
 
         hexesArray.forEach((hex, index) => {
@@ -473,7 +412,6 @@ export default function CatanPage() {
             }
         });
 
-        // Assign numbers one by one, checking constraints
         let numberIndex = 0;
 
         for (const hexInfo of hexesToNumber) {
@@ -489,16 +427,13 @@ export default function CatanPage() {
             const { row, col } = coords;
             let assigned = false;
 
-            // Try to assign the next number in sequence
             for (let attempt = 0; attempt < numbersArray.length - numberIndex; attempt++) {
                 const numberToTry = numbersArray[numberIndex + attempt];
                 hexesArray[index].number = numberToTry;
 
-                // Check if this creates a violation
                 const hasViolation = hasHighNumberAdjacency(numberToTry, row, col, hexesArray, rows);
 
                 if (!hasViolation) {
-                    // Successful assignment - swap this number to the front
                     if (attempt > 0) {
                         [numbersArray[numberIndex], numbersArray[numberIndex + attempt]] =
                             [numbersArray[numberIndex + attempt], numbersArray[numberIndex]];
@@ -507,13 +442,11 @@ export default function CatanPage() {
                     assigned = true;
                     break;
                 } else {
-                    // Try next number
                     hexesArray[index].number = undefined;
                 }
             }
 
             if (!assigned) {
-                // Could not assign without violation - need to retry
                 return false;
             }
         }
@@ -521,7 +454,6 @@ export default function CatanPage() {
         return true;
     };
 
-    // ========== SCENARIO CONFIGURATION SYSTEM ==========
     type ScenarioConfig = {
         layout: string[][]; // land/water layout
         placementRules?: (hexes: Hex[], resources: ResourceType[], seed: number, rows: Array<{ count: number; offset: number }>, counts: Partial<Record<ResourceType, number>>, playerCount: 3 | 4 | 6 | '5-6') => Hex[];
@@ -533,7 +465,6 @@ export default function CatanPage() {
     };
 
 
-    // Heading for New Shores placement function
     const headingForNewShoresPlacement = (
         hexes: Hex[],
         resources: ResourceType[],
@@ -548,32 +479,19 @@ export default function CatanPage() {
         let bigIslandIndices: number[];
 
         if (playerCount === 3) {
-            // 3-player layout: 4-5-6-7-6-5-4 = 37 hexes
-            // Big island locations: 3-4, 7-9, 12-15, 19-21, 26-27 (14 hexes)
             bigIslandIndices = [3, 4, 7, 8, 9, 12, 13, 14, 15, 19, 20, 21, 26, 27];
-
-            // Permanent water: 2,6,11,16,18,22,25,28,31-33 (11 hexes)
             alwaysWaterIndices = [2, 6, 11, 16, 18, 22, 25, 28, 31, 32, 33];
 
-            // Small islands: remaining hexes (12 hexes)
             smallIslandIndices = [];
             for (let i = 1; i <= totalHexes; i++) {
                 if (!alwaysWaterIndices.includes(i) && !bigIslandIndices.includes(i)) {
                     smallIslandIndices.push(i);
                 }
             }
-
-            // Big island: 14 hexes total (no desert - all get resources)
-            // Small islands: 12 hexes total
         } else if (playerCount === 6) {
-            // 6-player layout: 7-8-9-10-9-8-7 = 58 hexes
-            // Big island: 3-5,10-13,18-22,27-32,37-41,46-49,54-56 (30 hexes)
             bigIslandIndices = [3, 4, 5, 10, 11, 12, 13, 18, 19, 20, 21, 22, 27, 28, 29, 30, 31, 32, 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56];
-
-            // Permanent water: 2,6,9,14,17,23,25,26,33,34,36,42,45,50,53,57 (16 hexes)
             alwaysWaterIndices = [2, 6, 9, 14, 17, 23, 25, 26, 33, 34, 36, 42, 45, 50, 53, 57];
 
-            // Small islands: remaining hexes (12 hexes)
             smallIslandIndices = [];
             for (let i = 1; i <= totalHexes; i++) {
                 if (!alwaysWaterIndices.includes(i) && !bigIslandIndices.includes(i)) {
@@ -581,28 +499,12 @@ export default function CatanPage() {
                 }
             }
         } else {
-            // 4-player layout: 5-6-7-8-7-6-5 = 44 hexes
-            // Define permanent water hex indices (1-indexed): 2,7,13,19,21,26,29,33,36-39
             alwaysWaterIndices = [
-                2,   // row 0, pos 1
-                7,   // row 1, pos 1
-                13,  // row 2, pos 1
-                19,  // row 3, pos 0
-                21,  // row 3, pos 2
-                26,  // row 3, pos 7
-                29,  // row 4, pos 2
-                33,  // row 4, pos 6
-                36, 37, 38, 39  // row 5: positions 2,3,4,5
+                2, 7, 13, 19, 21, 26, 29, 33, 36, 37, 38, 39
             ];
 
-            // Define small island zone (1-indexed): 1,6,12,20,27,28,34-35,40-44
             smallIslandIndices = [1, 6, 12, 20, 27, 28, 34, 35, 40, 41, 42, 43, 44];
-
-            // Define big island zone (1-indexed): 3-5,8-11,14-18,22-25,30-32
             bigIslandIndices = [3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 22, 23, 24, 25, 30, 31, 32];
-
-            // Big island: 19 hexes = 1 desert + 18 resource hexes
-            // Small islands: 9 land hexes = 2 gold + 7 resource hexes
         }
 
         const resourceTypes: ResourceType[] = ['forest', 'pasture', 'field', 'hill', 'mountain'];
@@ -630,85 +532,60 @@ export default function CatanPage() {
         let smallIslandResources: ResourceType[] = [];
 
         if (playerCount === 3) {
-            // Big island: fixed distribution + 1 random from [hay, brick, wood]
-            const randomChoices: ResourceType[] = ['field', 'hill', 'mountain']; // hay, brick, wood
+            const randomChoices: ResourceType[] = ['field', 'hill', 'mountain'];
             const chosenRandom = randomChoices[Math.floor(seededRandom(seed + 3000, randomChoices.length))];
             const remainingRandom = randomChoices.filter(choice => choice !== chosenRandom);
 
             bigIslandResources = [
-                // Fixed: 4 sheep, 2 hay, 2 brick, 2 rock, 3 wood
-                'pasture', 'pasture', 'pasture', 'pasture', // 4 sheep
-                'field', 'field', // 2 hay
-                'hill', 'hill', // 2 brick
-                'mountain', 'mountain', // 2 rock
-                'forest', 'forest', 'forest', // 3 wood
-                chosenRandom // 1 random from remaining
+                'pasture', 'pasture', 'pasture', 'pasture',
+                'field', 'field',
+                'hill', 'hill',
+                'mountain', 'mountain',
+                'forest', 'forest', 'forest',
+                chosenRandom
             ];
 
-            // Small islands: fixed + 2 remaining options from big island random
             smallIslandResources = [
-                // Fixed: 2 gold, 1 hay, 1 brick, 1 rock, 1 sheep
-                'gold', 'gold', // 2 gold
-                'field', // 1 hay
-                'hill', // 1 brick
-                'mountain', // 1 rock
-                'pasture', // 1 sheep
-                // 2 remaining options from big island random
+                'gold', 'gold',
+                'field',
+                'hill',
+                'mountain',
+                'pasture',
                 remainingRandom[0], remainingRandom[1]
             ];
         } else if (playerCount === 6) {
-            // 6-player big island: 2 desert, 5 rock, 5 brick, 6 sheep, 6 wood, 6 wheat
             bigIslandResources = [
-                // 2 desert
                 'desert', 'desert',
-                // 5 rock
                 'mountain', 'mountain', 'mountain', 'mountain', 'mountain',
-                // 5 brick
                 'hill', 'hill', 'hill', 'hill', 'hill',
-                // 6 sheep
                 'pasture', 'pasture', 'pasture', 'pasture', 'pasture', 'pasture',
-                // 6 wood
                 'forest', 'forest', 'forest', 'forest', 'forest', 'forest',
-                // 6 wheat
                 'field', 'field', 'field', 'field', 'field', 'field'
             ];
 
-            // 6-player small islands: 2 water, 3 gold, 2 rock, 2 brick, 1 sheep, 1 wood, 1 wheat
             smallIslandResources = [
-                // 3 gold
                 'gold', 'gold', 'gold',
-                // 2 rock
                 'mountain', 'mountain',
-                // 2 brick
                 'hill', 'hill',
-                // 1 sheep
                 'pasture',
-                // 1 wood
                 'forest',
-                // 1 wheat
                 'field'
             ];
         } else {
-            // 4-player logic
-            // Step 1: Start with 3 of each resource for big island, 1 of each for small islands
             const bigIslandResourceCounts: { [key: string]: number } = {};
             const smallIslandResourceCounts: { [key: string]: number } = {};
 
             resourceTypes.forEach(resourceType => {
-                bigIslandResourceCounts[resourceType] = 3;  // Base: 3 of each
-                smallIslandResourceCounts[resourceType] = 1; // Base: 1 of each (ensures at least 1 on small islands)
+                bigIslandResourceCounts[resourceType] = 3;
+                smallIslandResourceCounts[resourceType] = 1;
             });
 
-            // Step 2: Randomly select 3 resource types to get +1 on big island
-            // The remaining 2 types get +1 on small islands
             const shuffledTypes = [...resourceTypes];
             for (let i = shuffledTypes.length - 1; i > 0; i--) {
                 const j = Math.floor(seededRandom(seed + 5000, i) * (i + 1));
                 [shuffledTypes[i], shuffledTypes[j]] = [shuffledTypes[j], shuffledTypes[i]];
             }
 
-            // First 3 shuffled types get +1 on big island (total 4)
-            // Last 2 shuffled types get +1 on small islands (total 2)
             for (let i = 0; i < 3; i++) {
                 bigIslandResourceCounts[shuffledTypes[i]]++;
             }
@@ -716,21 +593,16 @@ export default function CatanPage() {
                 smallIslandResourceCounts[shuffledTypes[i]]++;
             }
 
-            // Step 3: Build the resource arrays for 4-player
-            // Add desert to big island
             bigIslandResources.push('desert');
 
-            // Add resources to big island
             resourceTypes.forEach(resourceType => {
                 for (let i = 0; i < bigIslandResourceCounts[resourceType]; i++) {
                     bigIslandResources.push(resourceType);
                 }
             });
 
-            // Add 2 gold to small islands
             smallIslandResources.push('gold', 'gold');
 
-            // Add resources to small islands
             resourceTypes.forEach(resourceType => {
                 for (let i = 0; i < smallIslandResourceCounts[resourceType]; i++) {
                     smallIslandResources.push(resourceType);
@@ -738,26 +610,22 @@ export default function CatanPage() {
             });
         }
 
-        // Randomly select some small island positions to be water
         const smallIslandWaterPositions: number[] = [];
         if (playerCount === 3) {
-            // For 3-player, make 4 small island hexes water
             const shuffledSmallIslandIndices = [...smallIslandIndices];
             for (let i = shuffledSmallIslandIndices.length - 1; i > 0; i--) {
                 const j = Math.floor(seededRandom(seed + 2000, i) * (i + 1));
                 [shuffledSmallIslandIndices[i], shuffledSmallIslandIndices[j]] = [shuffledSmallIslandIndices[j], shuffledSmallIslandIndices[i]];
             }
-            smallIslandWaterPositions.push(...shuffledSmallIslandIndices.slice(0, 4)); // 4 water tiles
+            smallIslandWaterPositions.push(...shuffledSmallIslandIndices.slice(0, 4));
         } else if (playerCount === 6) {
-            // For 6-player, make 2 small island hexes water
             const shuffledSmallIslandIndices = [...smallIslandIndices];
             for (let i = shuffledSmallIslandIndices.length - 1; i > 0; i--) {
                 const j = Math.floor(seededRandom(seed + 2000, i) * (i + 1));
                 [shuffledSmallIslandIndices[i], shuffledSmallIslandIndices[j]] = [shuffledSmallIslandIndices[j], shuffledSmallIslandIndices[i]];
             }
-            smallIslandWaterPositions.push(...shuffledSmallIslandIndices.slice(0, 2)); // 2 water tiles
+            smallIslandWaterPositions.push(...shuffledSmallIslandIndices.slice(0, 2));
         } else {
-            // For 4-player, make 4 small island positions water
             const shuffledSmallIslandIndices = [...smallIslandIndices];
             for (let i = shuffledSmallIslandIndices.length - 1; i > 0; i--) {
                 const j = Math.floor(seededRandom(seed + 2000, i) * (i + 1));
@@ -766,7 +634,6 @@ export default function CatanPage() {
             smallIslandWaterPositions.push(...shuffledSmallIslandIndices.slice(0, 4));
         }
 
-        // Shuffle both resource pools
         for (let i = bigIslandResources.length - 1; i > 0; i--) {
             const j = Math.floor(seededRandom(seed, i) * (i + 1));
             [bigIslandResources[i], bigIslandResources[j]] = [bigIslandResources[j], bigIslandResources[i]];
@@ -777,36 +644,29 @@ export default function CatanPage() {
             [smallIslandResources[i], smallIslandResources[j]] = [smallIslandResources[j], smallIslandResources[i]];
         }
 
-        // Assign resources to hexes
         let smallIslandResourceIndex = 0;
         let bigIslandResourceIndex = 0;
 
         hexes.forEach((hex, index) => {
-            const hexNumber = index + 1; // 1-indexed
+            const hexNumber = index + 1;
 
             if (alwaysWaterIndices.includes(hexNumber)) {
-                // Permanent water
                 hex.resourceType = 'water';
             } else if (smallIslandIndices.includes(hexNumber)) {
-                // Small island zone
                 if (smallIslandWaterPositions.includes(hexNumber)) {
-                    // This position is randomly selected to be water
                     hex.resourceType = 'water';
                 } else if (smallIslandResourceIndex < smallIslandResources.length) {
-                    // Assign land resources to remaining positions
                     hex.resourceType = smallIslandResources[smallIslandResourceIndex++];
                 } else {
-                    hex.resourceType = 'desert'; // fallback (shouldn't happen)
+                    hex.resourceType = 'desert';
                 }
             } else if (bigIslandIndices.includes(hexNumber)) {
-                // Big island zone - assign resources
                 if (bigIslandResourceIndex < bigIslandResources.length) {
                     hex.resourceType = bigIslandResources[bigIslandResourceIndex++];
                 } else {
-                    hex.resourceType = 'desert'; // fallback (shouldn't happen)
+                    hex.resourceType = 'desert';
                 }
             } else {
-                // Shouldn't happen, but fallback
                 hex.resourceType = 'desert';
             }
         });
@@ -814,7 +674,6 @@ export default function CatanPage() {
         return hexes;
     };
 
-    // 4 Islands placement function
     const fourIslandsPlacement = (
         hexes: Hex[],
         landResources: ResourceType[],
@@ -823,46 +682,27 @@ export default function CatanPage() {
         counts: Partial<Record<ResourceType, number>>,
         playerCount: 3 | 4 | 6 | '5-6'
     ): Hex[] => {
-        // Land resource templates - hexes that will have resources (1-indexed)
-        // All other hexes become water
-
-        // 4-player templates (23 land hexes: 5 wood, 5 sheep, 5 wheat, 4 brick, 4 rock)
         const fourPlayerTemplates = [
-            // Template 0
             [1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 18, 23, 27, 28, 29, 30, 32, 33, 34, 36, 37],
-            // Template 1
             [1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 23, 24, 27, 28, 29, 30, 32, 33, 34, 35, 37],
-            // Template 2
             [1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 19, 23, 27, 28, 29, 30, 32, 33, 34, 35, 37],
-            // Template 3
             [1, 2, 4, 5, 6, 8, 9, 11, 10, 12, 14, 15, 19, 23, 24, 27, 28, 29, 30, 32, 33, 34, 36],
-            // Template 4
             [1, 2, 4, 5, 6, 8, 9, 11, 10, 15, 20, 23, 24, 25, 27, 28, 29, 30, 32, 33, 34, 36, 37],
-            // Template 5
             [1, 2, 4, 5, 6, 8, 9, 10, 14, 15, 18, 23, 24, 25, 27, 28, 29, 30, 32, 33, 34, 35, 37],
-            // Template 6
             [1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 18, 23, 27, 28, 29, 30, 32, 33, 34, 36, 37],
-            // Template 7
             [1, 2, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 23, 24, 25, 27, 28, 29, 30, 32, 33, 34, 35],
         ];
 
-        // 3-player templates (20 land hexes: 4 wood, 4 sheep, 4 wheat, 4 brick, 4 rock)
         const threePlayerTemplates: number[][] = [
-            // Template 0
             [4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 23, 24, 27, 28, 29, 30, 32, 33, 34, 37],
             [1, 4, 5, 6, 8, 9, 10, 13, 14, 15, 23, 24, 27, 28, 29, 30, 32, 33, 34, 37],
             [1, 4, 5, 6, 8, 9, 10, 11, 14, 15, 23, 24, 27, 28, 29, 30, 32, 33, 34, 37],
         ];
 
-        // 6-player templates (32 land hexes: 7 wood, 7 sheep, 6 wheat, 6 brick, 6 rock)
         const sixPlayerTemplates: number[][] = [
-            // Template 0
             [1, 2, 8, 9, 17, 4, 11, 12, 20, 19, 21, 6, 7, 14, 15, 35, 36, 44, 45, 52, 53, 55, 47, 39, 38, 23, 48, 57, 58, 50, 51, 43],
-            // Template 1
             [1, 2, 8, 9, 18, 4, 5, 11, 12, 20, 7, 14, 15, 23, 24, 35, 36, 44, 45, 52, 53, 55, 56, 47, 48, 38, 39, 58, 50, 51, 43, 42],
-            // Template 2
             [1, 2, 8, 9, 17, 4, 5, 11, 12, 20, 7, 14, 15, 23, 24, 21, 36, 44, 45, 52, 53, 55, 56, 47, 48, 38, 39, 58, 50, 51, 43, 42],
-            // Template 3
             [1, 2, 8, 9, 17, 4, 11, 12, 20, 19, 16, 6, 7, 14, 15, 35, 36, 44, 45, 52, 23, 55, 47, 39, 38, 54, 48, 57, 58, 50, 51, 42],
             [1, 40, 8, 9, 17, 4, 11, 12, 20, 19, 16, 6, 7, 14, 15, 35, 36, 44, 45, 52, 23, 22, 47, 39, 38, 54, 48, 57, 58, 50, 51, 42],
         ];
@@ -888,57 +728,48 @@ export default function CatanPage() {
         // Convert to 0-indexed
         const landIndices = landHexIndices.map(i => i - 1);
 
-        // Build resource pool based on player count
         let resourcePool: ResourceType[];
 
         if (playerCount === 3) {
-            // 3-player: 20 land hexes (4 of each resource)
             resourcePool = [
-                'pasture', 'pasture', 'pasture', 'pasture',     // 4 sheep
-                'field', 'field', 'field', 'field',             // 4 wheat
-                'forest', 'forest', 'forest', 'forest',         // 4 wood
-                'hill', 'hill', 'hill', 'hill',                 // 4 brick
-                'mountain', 'mountain', 'mountain', 'mountain', // 4 rock
+                'pasture', 'pasture', 'pasture', 'pasture',
+                'field', 'field', 'field', 'field',
+                'forest', 'forest', 'forest', 'forest',
+                'hill', 'hill', 'hill', 'hill',
+                'mountain', 'mountain', 'mountain', 'mountain',
             ];
         } else if (playerCount === 6) {
-            // 6-player: 32 land hexes (7 wood, 7 sheep, 6 wheat, 6 brick, 6 rock)
             resourcePool = [
-                'forest', 'forest', 'forest', 'forest', 'forest', 'forest', 'forest', // 7 wood
-                'pasture', 'pasture', 'pasture', 'pasture', 'pasture', 'pasture', 'pasture', // 7 sheep
-                'field', 'field', 'field', 'field', 'field', 'field',     // 6 wheat
-                'hill', 'hill', 'hill', 'hill', 'hill', 'hill',           // 6 brick
-                'mountain', 'mountain', 'mountain', 'mountain', 'mountain', 'mountain', // 6 rock
+                'forest', 'forest', 'forest', 'forest', 'forest', 'forest', 'forest',
+                'pasture', 'pasture', 'pasture', 'pasture', 'pasture', 'pasture', 'pasture',
+                'field', 'field', 'field', 'field', 'field', 'field',
+                'hill', 'hill', 'hill', 'hill', 'hill', 'hill',
+                'mountain', 'mountain', 'mountain', 'mountain', 'mountain', 'mountain',
             ];
         } else {
-            // 4-player: 23 land hexes (5 wood, 5 sheep, 5 wheat, 4 brick, 4 rock)
             resourcePool = [
-                'pasture', 'pasture', 'pasture', 'pasture', 'pasture', // 5 sheep
-                'field', 'field', 'field', 'field', 'field',           // 5 wheat
-                'forest', 'forest', 'forest', 'forest', 'forest',      // 5 wood
-                'hill', 'hill', 'hill', 'hill',                        // 4 brick
-                'mountain', 'mountain', 'mountain', 'mountain',        // 4 rock
+                'pasture', 'pasture', 'pasture', 'pasture', 'pasture',
+                'field', 'field', 'field', 'field', 'field',
+                'forest', 'forest', 'forest', 'forest', 'forest',
+                'hill', 'hill', 'hill', 'hill',
+                'mountain', 'mountain', 'mountain', 'mountain',
             ];
         }
 
-        // Shuffle resource pool
         for (let i = resourcePool.length - 1; i > 0; i--) {
             const j = Math.floor(seededRandom(seed + 7000, i) * (i + 1));
             [resourcePool[i], resourcePool[j]] = [resourcePool[j], resourcePool[i]];
         }
 
-        // Assign resources to hexes
         let resourceIndex = 0;
         hexes.forEach((hex, index) => {
             if (landIndices.includes(index)) {
-                // This hex gets a resource
                 if (resourceIndex < resourcePool.length) {
                     hex.resourceType = resourcePool[resourceIndex++];
                 } else {
-                    // Shouldn't happen but fallback to water
                     hex.resourceType = 'water';
                 }
             } else {
-                // This hex is water
                 hex.resourceType = 'water';
             }
         });
@@ -1627,18 +1458,16 @@ export default function CatanPage() {
         return points;
     }, [hexes, rows, playerCount, hexWidth, hexHeight]);
 
-    // Generate randomized port assignments for big island
     const generateBigIslandPortAssignments = useMemo(() => {
         const seededRandom = (seed: number) => {
             const x = Math.sin(seed++) * 10000;
             return x - Math.floor(x);
         };
 
-        let seed = randomSeed + 1000; // Different seed than classic ports
+        let seed = randomSeed + 1000;
         let portTypes: string[] = [];
 
         if (playerCount === 3) {
-            // 3-player: one brick, sheep, rock, wood, wheat + 3 random 3:1
             portTypes = [
                 'brick_2-1',
                 'sheep_2-1',
@@ -1650,7 +1479,6 @@ export default function CatanPage() {
                 'generic_3-1',
             ];
         } else if (playerCount === 6) {
-            // 6-player: 1 wood, 1 wheat, 1 rock, 1 brick, 2 sheep + 5 random 3:1
             portTypes = [
                 'wood_2-1',
                 'wheat_2-1',
@@ -1665,7 +1493,6 @@ export default function CatanPage() {
                 'generic_3-1',
             ];
         } else {
-            // 4-player: one brick, sheep, rock, wood, wheat + 4 random 3:1
             portTypes = [
                 'brick_2-1',
                 'sheep_2-1',
@@ -1679,7 +1506,6 @@ export default function CatanPage() {
             ];
         }
 
-        // Fisher-Yates shuffle
         for (let i = portTypes.length - 1; i > 0; i--) {
             const j = Math.floor(seededRandom(seed++) * (i + 1));
             [portTypes[i], portTypes[j]] = [portTypes[j], portTypes[i]];
@@ -1688,7 +1514,6 @@ export default function CatanPage() {
         return portTypes;
     }, [playerCount, expansion, randomSeed]);
 
-    // Generate randomized port assignments
     const generatePortAssignments = useMemo(() => {
         const seededRandom = (seed: number) => {
             const x = Math.sin(seed++) * 10000;
@@ -1699,7 +1524,6 @@ export default function CatanPage() {
         let portTypes: string[] = [];
 
         if (playerCount === 4) {
-            // Classic 4-player: brick_2-1, sheep_2-1, rock_2-1, wheat_2-1, wood_2-1, generic_3-1, generic_3-1, generic_3-1, generic_3-1 (9 total)
             portTypes = [
                 'brick_2-1',
                 'sheep_2-1',
@@ -1712,7 +1536,6 @@ export default function CatanPage() {
                 'generic_3-1',
             ];
         } else {
-            // Classic 5-6 player: brick_2-1, sheep_2-1, rock_2-1, wheat_2-1, wood_2-1, wood_2-1, generic_3-1 x5 (11 total)
             portTypes = [
                 'brick_2-1',
                 'sheep_2-1',
@@ -1728,7 +1551,6 @@ export default function CatanPage() {
             ];
         }
 
-        // Fisher-Yates shuffle
         for (let i = portTypes.length - 1; i > 0; i--) {
             const j = Math.floor(seededRandom(seed++) * (i + 1));
             [portTypes[i], portTypes[j]] = [portTypes[j], portTypes[i]];
@@ -1737,7 +1559,6 @@ export default function CatanPage() {
         return portTypes;
     }, [playerCount, expansion, randomSeed]);
 
-    // 4-Islands Port Assignments (9 ports for 3/4-player, 11 ports for 6-player)
     const generateFourIslandsPortAssignments = useMemo(() => {
         if (scenario !== '4-islands') {
             return [];
@@ -1746,11 +1567,7 @@ export default function CatanPage() {
         let portTypes: string[];
 
         if (playerCount === 6) {
-            // 6-player: 11 total ports
-            // 5 resource ports (one of each) + 1 random resource port + 5 generic 3:1 ports
             const resourceTypes = ['sheep_2-1', 'wood_2-1', 'rock_2-1', 'brick_2-1', 'wheat_2-1'];
-
-            // Pick a random resource for the 6th resource port
             const randomResourceIndex = Math.floor(seededRandom(randomSeed + 8000, 0) * resourceTypes.length);
             const extraResource = resourceTypes[randomResourceIndex];
 
@@ -1768,7 +1585,6 @@ export default function CatanPage() {
                 'generic_3-1',
             ];
         } else {
-            // 3/4-player: 9 total ports (5 resource ports + 4 generic 3:1 ports)
             portTypes = [
                 'sheep_2-1',
                 'wood_2-1',
@@ -1782,7 +1598,6 @@ export default function CatanPage() {
             ];
         }
 
-        // Shuffle using seeded random
         let seed = randomSeed + 8001;
         for (let i = portTypes.length - 1; i > 0; i--) {
             const j = Math.floor(seededRandom(seed++, 0) * (i + 1));
@@ -1793,8 +1608,12 @@ export default function CatanPage() {
         return portTypes;
     }, [scenario, randomSeed, playerCount]);
 
-    // 4-Islands Port Placements
-    const fourIslandsPortPlacements = useMemo(() => {
+    const fourIslandsPortPlacements = useMemo((): Array<{
+        x: number;
+        y: number;
+        angle: number;
+        portType: string;
+    }> => {
         console.log('fourIslandsPortPlacements called - scenario:', scenario, 'assignments length:', generateFourIslandsPortAssignments.length);
 
         if (scenario !== '4-islands' || generateFourIslandsPortAssignments.length === 0) {
@@ -1804,15 +1623,11 @@ export default function CatanPage() {
 
         console.log('Port assignments:', generateFourIslandsPortAssignments);
 
-        // Determine which template is being used (must match fourIslandsPlacement logic)
-        // 3-player has 3 templates, 4-player has 8 templates, 6-player has 5 templates
         const maxTemplates = playerCount === 3 ? 3 : playerCount === 6 ? 5 : 8;
         const templateIndex = Math.floor(seededRandom(randomSeed + 5000, 0) * maxTemplates);
         console.log('Using template index:', templateIndex, 'for', playerCount, 'players');
 
-        // Port locations for 3-player templates
         const threePlayerPortLocations = [
-            // Template 0 ports
             [
                 { hexIndex: 23, vertex1: 3, vertex2: 4 },
                 { hexIndex: 34, vertex1: 1, vertex2: 2 },
@@ -1824,7 +1639,6 @@ export default function CatanPage() {
                 { hexIndex: 15, vertex1: 0, vertex2: 1 },
                 { hexIndex: 13, vertex1: 3, vertex2: 4 },
             ],
-            // Template 1 ports
             [
                 { hexIndex: 34, vertex1: 3, vertex2: 4 },
                 { hexIndex: 23, vertex1: 5, vertex2: 0 },
@@ -1836,7 +1650,6 @@ export default function CatanPage() {
                 { hexIndex: 37, vertex1: 3, vertex2: 4 },
                 { hexIndex: 28, vertex1: 1, vertex2: 2 },
             ],
-            // Template 2 ports
             [
                 { hexIndex: 34, vertex1: 2, vertex2: 3 },
                 { hexIndex: 23, vertex1: 4, vertex2: 5 },
@@ -1850,9 +1663,7 @@ export default function CatanPage() {
             ],
         ];
 
-        // Port locations for 4-player templates
         const fourPlayerPortLocations = [
-            // Template 0 ports
             [
                 { hexIndex: 1, vertex1: 4, vertex2: 5 },
                 { hexIndex: 10, vertex1: 4, vertex2: 5 },
@@ -1864,7 +1675,6 @@ export default function CatanPage() {
                 { hexIndex: 36, vertex1: 3, vertex2: 4 },
                 { hexIndex: 33, vertex1: 2, vertex2: 3 },
             ],
-            // Template 1 ports
             [
                 { hexIndex: 1, vertex1: 5, vertex2: 0 },
                 { hexIndex: 10, vertex1: 4, vertex2: 5 },
@@ -1876,7 +1686,6 @@ export default function CatanPage() {
                 { hexIndex: 30, vertex1: 0, vertex2: 1 },
                 { hexIndex: 23, vertex1: 3, vertex2: 4 },
             ],
-            // Template 2 ports
             [
                 { hexIndex: 5, vertex1: 4, vertex2: 5 },
                 { hexIndex: 10, vertex1: 3, vertex2: 4 },
@@ -1888,7 +1697,6 @@ export default function CatanPage() {
                 { hexIndex: 30, vertex1: 5, vertex2: 0 },
                 { hexIndex: 29, vertex1: 3, vertex2: 4 },
             ],
-            // Template 3 ports
             [
                 { hexIndex: 1, vertex1: 4, vertex2: 5 },
                 { hexIndex: 10, vertex1: 4, vertex2: 5 },
@@ -1900,7 +1708,6 @@ export default function CatanPage() {
                 { hexIndex: 23, vertex1: 3, vertex2: 4 },
                 { hexIndex: 34, vertex1: 1, vertex2: 2 },
             ],
-            // Template 4 ports
             [
                 { hexIndex: 10, vertex1: 4, vertex2: 5 },
                 { hexIndex: 2, vertex1: 1, vertex2: 2 },
@@ -1912,7 +1719,6 @@ export default function CatanPage() {
                 { hexIndex: 28, vertex1: 1, vertex2: 2 },
                 { hexIndex: 37, vertex1: 3, vertex2: 4 },
             ],
-            // Template 5 ports
             [
                 { hexIndex: 18, vertex1: 1, vertex2: 2 },
                 { hexIndex: 5, vertex1: 4, vertex2: 5 },
@@ -1924,7 +1730,6 @@ export default function CatanPage() {
                 { hexIndex: 28, vertex1: 1, vertex2: 2 },
                 { hexIndex: 36, vertex1: 3, vertex2: 4 },
             ],
-            // Template 6 ports
             [
                 { hexIndex: 1, vertex1: 4, vertex2: 5 },
                 { hexIndex: 10, vertex1: 3, vertex2: 4 },
@@ -1936,7 +1741,6 @@ export default function CatanPage() {
                 { hexIndex: 28, vertex1: 1, vertex2: 2 },
                 { hexIndex: 37, vertex1: 3, vertex2: 4 },
             ],
-            // Template 7 ports
             [
                 { hexIndex: 5, vertex1: 5, vertex2: 0 },
                 { hexIndex: 11, vertex1: 1, vertex2: 2 },
@@ -1950,9 +1754,7 @@ export default function CatanPage() {
             ],
         ];
 
-        // Port locations for 6-player templates (11 ports each)
         const sixPlayerPortLocations = [
-            // Template 0 ports
             [
                 { hexIndex: 8, vertex1: 4, vertex2: 5 },
                 { hexIndex: 17, vertex1: 2, vertex2: 3 },
@@ -1966,7 +1768,6 @@ export default function CatanPage() {
                 { hexIndex: 36, vertex1: 1, vertex2: 2 },
                 { hexIndex: 44, vertex1: 4, vertex2: 5 },
             ],
-            // Template 1 ports
             [
                 { hexIndex: 1, vertex1: 5, vertex2: 0 },
                 { hexIndex: 8, vertex1: 3, vertex2: 4 },
@@ -1980,7 +1781,6 @@ export default function CatanPage() {
                 { hexIndex: 35, vertex1: 4, vertex2: 5 },
                 { hexIndex: 53, vertex1: 3, vertex2: 4 },
             ],
-            // Template 2 ports
             [
                 { hexIndex: 8, vertex1: 4, vertex2: 5 },
                 { hexIndex: 4, vertex1: 5, vertex2: 0 },
@@ -1994,7 +1794,6 @@ export default function CatanPage() {
                 { hexIndex: 36, vertex1: 4, vertex2: 5 },
                 { hexIndex: 52, vertex1: 2, vertex2: 3 },
             ],
-            // Template 3 ports
             [
                 { hexIndex: 8, vertex1: 4, vertex2: 5 },
                 { hexIndex: 17, vertex1: 2, vertex2: 3 },
@@ -2008,7 +1807,6 @@ export default function CatanPage() {
                 { hexIndex: 35, vertex1: 3, vertex2: 4 },
                 { hexIndex: 52, vertex1: 1, vertex2: 2 },
             ],
-            // Template 4 ports (same as template 3)
             [
                 { hexIndex: 8, vertex1: 4, vertex2: 5 },
                 { hexIndex: 17, vertex1: 2, vertex2: 3 },
@@ -2030,13 +1828,11 @@ export default function CatanPage() {
                 fourPlayerPortLocations;
         const portLocations = portLocationsByTemplate[templateIndex];
 
-        // If this template has no ports defined yet, return empty
         if (!portLocations || portLocations.length === 0) {
             console.log('No ports defined for template', templateIndex);
             return [];
         }
 
-        // Calculate port positions
         const placements: Array<{
             x: number;
             y: number;
@@ -2045,10 +1841,8 @@ export default function CatanPage() {
         }> = [];
 
         portLocations.forEach((location, idx) => {
-            // Convert 1-indexed hex to 0-indexed
             const hexIdx = location.hexIndex - 1;
 
-            // Find row and col for this hex
             let hexRow = -1;
             let hexCol = -1;
             let currentIndex = 0;
@@ -2070,7 +1864,6 @@ export default function CatanPage() {
                 return;
             }
 
-            // Get vertices for this hex
             const vertices = getHexVerticesAt(hexRow, hexCol);
             if (!vertices) {
                 console.log(`Port ${idx} (hex ${location.hexIndex}): No vertices found`);
@@ -2085,7 +1878,6 @@ export default function CatanPage() {
                 return;
             }
 
-            // Calculate midpoint and rotation
             const midX = (v1.x + v2.x) / 2;
             const midY = (v1.y + v2.y) / 2;
             const angle = Math.atan2(v2.y - v1.y, v2.x - v1.x) * (180 / Math.PI) + 180;
@@ -2108,36 +1900,29 @@ export default function CatanPage() {
 
         console.log(`Total 4-islands ports placed: ${placements.length}/9`);
         return placements;
-    }, [scenario, generateFourIslandsPortAssignments, randomSeed]);
+    }, [scenario, generateFourIslandsPortAssignments, randomSeed, playerCount, rows]);
 
-    // Handle number token click for swapping
     const handleNumberTokenClick = (hex: Hex) => {
-        // Only allow clicking on hexes with numbers
         const effectiveNumber = getEffectiveNumber(hex.id, hex.number);
         if (effectiveNumber === undefined) return;
 
         if (selectedHexId === null) {
-            // First selection
             setSelectedHexId(hex.id);
         } else if (selectedHexId === hex.id) {
-            // Clicking same hex - deselect
             setSelectedHexId(null);
         } else {
-            // Second selection - perform swap
             const selectedHex = hexes.find(h => h.id === selectedHexId);
             if (selectedHex) {
                 const num1 = getEffectiveNumber(selectedHex.id, selectedHex.number);
                 const num2 = getEffectiveNumber(hex.id, hex.number);
 
                 if (num1 !== undefined && num2 !== undefined) {
-                    // Update the swaps map
                     const newSwaps = new Map(numberSwaps);
                     newSwaps.set(selectedHex.id, num2);
                     newSwaps.set(hex.id, num1);
                     setNumberSwaps(newSwaps);
                 }
             }
-            // Clear selection
             setSelectedHexId(null);
         }
     };
@@ -2206,7 +1991,6 @@ export default function CatanPage() {
                     </svg>
 
 
-                    {/* Classic perimeter border line - separate SVG for z-index control */}
                     {expansion === 'classic' && playerCount === '5-6' && perimeterPoints.length > 0 && (
                         <svg
                             style={{
@@ -2225,7 +2009,6 @@ export default function CatanPage() {
                                 </filter>
                             </defs>
 
-                            {/* Outer thicker border */}
                             <g>
                                 {perimeterPoints.map((point, idx) => {
                                     const nextIdx = (idx + 1) % perimeterPoints.length;
@@ -2248,9 +2031,7 @@ export default function CatanPage() {
                                 })}
                             </g>
 
-                            {/* Inner faded border */}
                             <g filter="url(#borderFade)">
-                                {/* Connect consecutive dots to form border */}
                                 {perimeterPoints.map((point, idx) => {
                                     const nextIdx = (idx + 1) % perimeterPoints.length;
                                     const nextPoint = perimeterPoints[nextIdx];
@@ -2270,12 +2051,9 @@ export default function CatanPage() {
                                     );
                                 })}
                             </g>
-
-
                         </svg>
                     )}
 
-                    {/* For classic 4-player */}
                     {expansion === 'classic' && playerCount === 4 && perimeterPoints.length > 0 && (
                         <svg
                             style={{
@@ -2294,7 +2072,6 @@ export default function CatanPage() {
                                 </filter>
                             </defs>
 
-                            {/* Outer thicker border */}
                             <g>
                                 {perimeterPoints.map((point, idx) => {
                                     const nextIdx = (idx + 1) % perimeterPoints.length;
@@ -2317,7 +2094,6 @@ export default function CatanPage() {
                                 })}
                             </g>
 
-                            {/* Inner faded border */}
                             <g filter="url(#borderFade4)">
                                 {perimeterPoints.map((point, idx) => {
                                     const nextIdx = (idx + 1) % perimeterPoints.length;
@@ -2338,12 +2114,9 @@ export default function CatanPage() {
                                     );
                                 })}
                             </g>
-
-
                         </svg>
                     )}
 
-                    {/* Big island border for seafarers */}
                     {expansion === 'seafarers' && scenario !== '4-islands' && buildBigIslandPerimeter.length > 0 && (
                         <svg
                             style={{
@@ -2362,7 +2135,6 @@ export default function CatanPage() {
                                 </filter>
                             </defs>
 
-                            {/* Outer thicker border */}
                             <g>
                                 {buildBigIslandPerimeter.map((point, idx) => {
                                     const nextIdx = (idx + 1) % buildBigIslandPerimeter.length;
@@ -2385,7 +2157,6 @@ export default function CatanPage() {
                                 })}
                             </g>
 
-                            {/* Inner faded border */}
                             <g filter="url(#bigIslandBorderFade)">
                                 {buildBigIslandPerimeter.map((point, idx) => {
                                     const nextIdx = (idx + 1) % buildBigIslandPerimeter.length;
@@ -2406,12 +2177,9 @@ export default function CatanPage() {
                                     );
                                 })}
                             </g>
-
                         </svg>
-                    )
-                    }
+                    )}
 
-                    {/* Big island ports for seafarers */}
                     {expansion === 'seafarers' && scenario !== '4-islands' && buildBigIslandPerimeter.length > 0 && (
                         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                             {(playerCount === 3 ? [
@@ -2464,7 +2232,6 @@ export default function CatanPage() {
                         </div>
                     )}
 
-                    {/* Port ships for classic - separated for proper z-index control */}
                     {expansion === 'classic' && playerCount === '5-6' && perimeterPoints.length > 0 && (
                         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                             {[[2, 3], [7, 8], [10, 11], [14, 15], [19, 20], [22, 23], [25, 26], [28, 29], [31, 32], [34, 35], [38, 0]].map((pair, idx) => {
@@ -2478,7 +2245,7 @@ export default function CatanPage() {
                                 const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI) + 180;
 
                                 const portType = generatePortAssignments[idx];
-                                const boatImage = `/images/catan_boat_${portType}.png`; // Direct path for testing
+                                const boatImage = `/images/catan_boat_${portType}.png`;
                                 const portSize = hexWidth * 1.4;
                                 const portOffset = portSize / 2;
 
@@ -2511,7 +2278,6 @@ export default function CatanPage() {
                         </div>
                     )}
 
-                    {/* For classic 4-player */}
                     {expansion === 'classic' && playerCount === 4 && perimeterPoints.length > 0 && (
                         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                             {[[0, 1], [3, 4], [7, 8], [10, 11], [13, 14], [17, 18], [20, 21], [23, 24], [27, 28]].map((pair, idx) => {
@@ -2525,7 +2291,7 @@ export default function CatanPage() {
                                 const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI) + 180;
 
                                 const portType = generatePortAssignments[idx];
-                                const boatImage = `/images/catan_boat_${portType}.png`; // Direct path for testing
+                                const boatImage = `/images/catan_boat_${portType}.png`;
                                 const portSize = hexWidth * 1.4;
                                 const portOffset = portSize / 2;
 
@@ -2558,7 +2324,6 @@ export default function CatanPage() {
                         </div>
                     )}
 
-                    {/* 4-Islands Ports */}
                     {expansion === 'seafarers' && scenario === '4-islands' && fourIslandsPortPlacements.length > 0 && (
                         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                             {fourIslandsPortPlacements.map((placement, idx) => {
@@ -2595,7 +2360,6 @@ export default function CatanPage() {
                         </div>
                     )}
 
-                    {/* Water hex borders - separate layer below hex content */}
                     <svg
                         style={{
                             position: 'absolute',
@@ -2618,14 +2382,10 @@ export default function CatanPage() {
                         ))}
                     </svg>
 
-                    {/* Barbarian ship track - Cities & Knights expansion */}
                     {citiesAndKnights && (() => {
-                        // For 3-player rotated board, we need to adjust positioning
                         const isRotated = playerCount === 3;
 
                         if (isRotated) {
-                            // When rotated 90deg clockwise, top becomes left
-                            // Position at top of rotated board (which appears on the left visually)
                             const maxY = Math.max(...hexes.map(hex => hex.y + hexHeight));
                             const trackTop = maxY + 100;
 
@@ -2657,7 +2417,6 @@ export default function CatanPage() {
                                 </div>
                             );
                         } else {
-                            // Normal positioning for non-rotated boards
                             const minX = Math.min(...hexes.map(hex => hex.x));
                             const trackLeft = minX - 100;
 
@@ -2691,6 +2450,33 @@ export default function CatanPage() {
                         }
                     })()}
 
+                    {/* Building Costs Legends */}
+                    {(() => {
+                        const minX = Math.min(...hexes.map(hex => hex.x));
+                        const legendSpacing = 20;
+                        const estimatedLegendWidth = citiesAndKnights ? 400 : 350;
+
+                        return (
+                            <>
+                                <BuildingCostsLegend
+                                    expansion={expansion}
+                                    citiesAndKnights={citiesAndKnights}
+                                    position="bottom-left"
+                                    left={minX - estimatedLegendWidth - legendSpacing}
+                                    bottom={0}
+                                />
+
+                                <BuildingCostsLegend
+                                    expansion={expansion}
+                                    citiesAndKnights={citiesAndKnights}
+                                    position="top-right"
+                                    right={0}
+                                    top={0}
+                                />
+                            </>
+                        );
+                    })()}
+
                     {hexes.map((hex, index) => (
                         <div
                             key={hex.id}
@@ -2704,10 +2490,7 @@ export default function CatanPage() {
                                 zIndex: 2,
                             }}
                         >
-                            {/* Resource image background */}
                             {expansion === 'seafarers' ? (
-                                // For Seafarers: wrapper with clip-path, inner div with rotated image
-                                // The image is rotated -90deg, so we swap width/height and adjust positioning
                                 <div
                                     style={{
                                         position: 'absolute',
@@ -2719,7 +2502,7 @@ export default function CatanPage() {
                                     <div
                                         style={{
                                             position: 'absolute',
-                                            width: `${Math.max(hexWidth, hexHeight) * 1.414}px`, // Diagonal to cover rotated hex
+                                            width: `${Math.max(hexWidth, hexHeight) * 1.414}px`,
                                             height: `${Math.max(hexWidth, hexHeight) * 1.414}px`,
                                             left: `${(hexWidth - Math.max(hexWidth, hexHeight) * 1.414) / 2}px`,
                                             top: `${(hexHeight - Math.max(hexWidth, hexHeight) * 1.414) / 2}px`,
@@ -2744,7 +2527,6 @@ export default function CatanPage() {
                                 />
                             )}
 
-                            {/* Light brown fading border overlay */}
                             <svg
                                 style={{
                                     position: 'absolute',
@@ -2782,7 +2564,6 @@ export default function CatanPage() {
                                             stroke="#E6D7AA"
                                             strokeWidth="4"
                                         />
-                                        {/* Outer border - extends beyond hex shape */}
                                         <polygon
                                             points={getOuterHexagonPoints(hexWidth / 2, hexHeight / 2, 3)}
                                             fill="none"
@@ -2794,7 +2575,6 @@ export default function CatanPage() {
                                 )}
                             </svg>
 
-                            {/* Number token */}
                             {hex.number !== undefined && (() => {
                                 const effectiveNumber = getEffectiveNumber(hex.id, hex.number);
                                 const isSelected = selectedHexId === hex.id;
@@ -2836,7 +2616,6 @@ export default function CatanPage() {
                                         >
                                             {effectiveNumber}
                                         </span>
-                                        {/* Probability dots */}
                                         <div
                                             style={{
                                                 display: 'flex',
@@ -2861,8 +2640,6 @@ export default function CatanPage() {
                                     </div>
                                 );
                             })()}
-
-
                         </div>
                     ))}
                 </div>
@@ -2879,7 +2656,6 @@ export default function CatanPage() {
                     Randomize
                 </button>
 
-                {/* Cities & Knights checkbox - available for both Classic and Seafarers */}
                 <div className="flex items-center gap-2 px-2 py-2">
                     <input
                         type="checkbox"

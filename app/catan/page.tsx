@@ -2396,9 +2396,9 @@ export default function CatanPage() {
                                         left: '50%',
                                         top: `${trackTop}px`,
                                         transform: 'translateX(-50%)',
-                                        display: 'flex',
-                                        flexDirection: 'row',
-                                        gap: '8px',
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(4, 1fr)',
+                                        gap: '12px',
                                         zIndex: 10,
                                     }}
                                 >
@@ -2406,13 +2406,21 @@ export default function CatanPage() {
                                         <div
                                             key={`barbarian-${index}`}
                                             style={{
-                                                width: '40px',
-                                                height: '40px',
+                                                width: '80px',
+                                                height: '80px',
                                                 borderRadius: '50%',
-                                                border: '1.5px solid #bfdbfe',
-                                                backgroundColor: index === 0 ? '#bfdbfe' : 'transparent',
+                                                border: '2px solid #bfdbfe',
+                                                backgroundColor: index === 7 ? '#bfdbfe' : 'transparent',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '28px',
+                                                fontWeight: 'bold',
+                                                color: '#bfdbfe',
                                             }}
-                                        />
+                                        >
+                                            {index === 7 ? '' : index + 1}
+                                        </div>
                                     ))}
                                 </div>
                             );
@@ -2427,9 +2435,9 @@ export default function CatanPage() {
                                         left: `${trackLeft}px`,
                                         top: '50%',
                                         transform: 'translateY(-50%)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '8px',
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                        gap: '12px',
                                         zIndex: 10,
                                     }}
                                 >
@@ -2437,13 +2445,21 @@ export default function CatanPage() {
                                         <div
                                             key={`barbarian-${index}`}
                                             style={{
-                                                width: '40px',
-                                                height: '40px',
+                                                width: '80px',
+                                                height: '80px',
                                                 borderRadius: '50%',
-                                                border: '1.5px solid #bfdbfe',
-                                                backgroundColor: index === 0 ? '#bfdbfe' : 'transparent',
+                                                border: '2px solid #bfdbfe',
+                                                backgroundColor: index === 7 ? '#bfdbfe' : 'transparent',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '28px',
+                                                fontWeight: 'bold',
+                                                color: '#bfdbfe',
                                             }}
-                                        />
+                                        >
+                                            {index === 7 ? '' : index + 1}
+                                        </div>
                                     ))}
                                 </div>
                             );

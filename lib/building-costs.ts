@@ -147,6 +147,17 @@ export const RESOURCE_LOGOS: Record<ResourceType, string | null> = {
   coin: null
 };
 
+export const RESOURCE_LOGOS_STYLE: Record<ResourceType, string | null> = {
+  brick: '/images/catan_brick_logo_style.png',
+  wood: '/images/catan_wood_logo_style.png',
+  wheat: '/images/catan_wheat_logo_style.png',
+  sheep: '/images/catan_sheep_logo_stle.png',
+  ore: '/images/catan_rock_logo_style.png',
+  paper: null,
+  cloth: null,
+  coin: null
+};
+
 export const COMMODITY_COLORS: Record<'science' | 'trade' | 'politics', string> = {
   science: '#22c55e', // green
   trade: '#eab308', // yellow

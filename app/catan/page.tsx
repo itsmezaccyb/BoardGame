@@ -68,7 +68,7 @@ export default function CatanPage() {
     };
 
     const renderBoat = (portType: string, key: string, midX: number, midY: number, angle: number) => {
-        const portSize = hexWidth * 1.4;
+        const portSize = hexWidth * (tileStyle === 'simple' ? 1.2 : 1.4);
         const portOffset = portSize / 2;
 
         if (tileStyle === 'simple') {
@@ -2837,6 +2837,7 @@ export default function CatanPage() {
                         expansion={expansion}
                         citiesAndKnights={citiesAndKnights}
                         position="bottom-left"
+                        tileStyle={tileStyle}
                     />
                 </div>
             </div>
@@ -2847,6 +2848,7 @@ export default function CatanPage() {
                         expansion={expansion}
                         citiesAndKnights={citiesAndKnights}
                         position="top-right"
+                        tileStyle={tileStyle}
                     />
                 </div>
             </div>

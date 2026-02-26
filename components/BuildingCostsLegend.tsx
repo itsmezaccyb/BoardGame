@@ -1,19 +1,21 @@
 'use client';
 
 import React from 'react';
-import { getBuildingsForVariant, RESOURCE_LOGOS, BuildingCost, COMMODITY_COLORS, COMMODITY_LABELS } from '@/lib/building-costs';
+import { getBuildingsForVariant, RESOURCE_LOGOS, RESOURCE_LOGOS_STYLE, BuildingCost, COMMODITY_COLORS, COMMODITY_LABELS } from '@/lib/building-costs';
 import { getImageUrl } from '@/lib/image-mapping';
 
 interface BuildingCostsLegendProps {
   expansion: 'classic' | 'seafarers';
   citiesAndKnights: boolean;
   position: 'bottom-left' | 'top-right';
+  tileStyle?: 'classic' | 'simple';
 }
 
 export function BuildingCostsLegend({
   expansion,
   citiesAndKnights,
-  position
+  position,
+  tileStyle = 'classic'
 }: BuildingCostsLegendProps) {
   const buildings = getBuildingsForVariant(expansion, citiesAndKnights);
   const isRotated = position === 'top-right';
@@ -44,6 +46,7 @@ export function BuildingCostsLegend({
             key={building.id}
             building={building}
             isCompact={isCompact}
+            tileStyle={tileStyle}
           />
         ))}
       </div>
@@ -54,9 +57,10 @@ export function BuildingCostsLegend({
 interface BuildingRowProps {
   building: BuildingCost;
   isCompact: boolean;
+  tileStyle: 'classic' | 'simple';
 }
 
-function BuildingRow({ building, isCompact }: BuildingRowProps) {
+function BuildingRow({ building, isCompact, tileStyle }: BuildingRowProps) {
   const iconSize = isCompact ? 32 : 36;
   const textSize = isCompact ? 'text-xs' : 'text-sm';
 
@@ -81,12 +85,12 @@ function BuildingRow({ building, isCompact }: BuildingRowProps) {
       <div className="flex items-center gap-0.5 flex-grow">
         {building.costs.map((cost, idx) => (
           <div key={`${cost.resource}-${idx}`} className="flex items-center gap-0">
-              {RESOURCE_LOGOS[cost.resource] ? (
+              {(tileStyle === 'simple' ? RESOURCE_LOGOS_STYLE : RESOURCE_LOGOS)[cost.resource] ? (
                 // Repeat resource icons based on amount
                 Array.from({ length: cost.amount }).map((_, iconIdx) => (
                   <img
                     key={`${cost.resource}-icon-${iconIdx}`}
-                    src={getImageUrl(RESOURCE_LOGOS[cost.resource]!)}
+                    src={getImageUrl((tileStyle === 'simple' ? RESOURCE_LOGOS_STYLE : RESOURCE_LOGOS)[cost.resource]!)}
                     alt={cost.resource}
                     style={{ width: iconSize, height: iconSize }}
                     className="object-contain"

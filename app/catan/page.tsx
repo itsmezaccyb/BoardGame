@@ -25,6 +25,7 @@ export default function CatanPage() {
     const [scenario, setScenario] = useState<ScenarioType>('heading-for-new-shores');
     const [randomSeed, setRandomSeed] = useState(0);
     const [citiesAndKnights, setCitiesAndKnights] = useState<boolean>(false);
+    const [tileStyle, setTileStyle] = useState<'classic' | 'simple'>('classic');
 
     const [selectedHexId, setSelectedHexId] = useState<string | null>(null);
     const [numberSwaps, setNumberSwaps] = useState<Map<string, number>>(new Map());
@@ -37,7 +38,16 @@ export default function CatanPage() {
         setNumberSwaps(new Map());
         setSelectedHexId(null);
     }, [randomSeed, playerCount, expansion, scenario]);
-    const resourceImages: Record<ResourceType, string> = {
+    const resourceImages: Record<ResourceType, string> = tileStyle === 'simple' ? {
+        forest: getImageUrl('/images/catan_wood_style.jpg'),
+        pasture: getImageUrl('/images/catan_sheep_style.jpg'),
+        field: getImageUrl('/images/catan_wheat_style.jpg'),
+        mountain: getImageUrl('/images/catan_rock_style.jpg'),
+        hill: getImageUrl('/images/catan_brick_style.jpg'),
+        desert: getImageUrl('/images/catan_desert_style.jpg'),
+        gold: getImageUrl('/images/catan_gold_style.png'),
+        water: '',
+    } : {
         forest: getImageUrl('/images/catan_woods.png'),
         pasture: getImageUrl('/images/catan_sheep.png'),
         field: getImageUrl('/images/catan_wheat.png'),
@@ -45,7 +55,93 @@ export default function CatanPage() {
         hill: getImageUrl('/images/catan_brick.png'),
         desert: getImageUrl('/images/catan_desert.png'),
         gold: getImageUrl('/images/catan_gold.jpg'),
-        water: '', // Clear/transparent for water tiles since background is sea
+        water: '',
+    };
+
+    const portLogoStyleMap: Record<string, string> = {
+        'brick_2-1': '/images/catan_brick_logo_style.png',
+        'sheep_2-1': '/images/catan_sheep_logo_stle.png',
+        'rock_2-1': '/images/catan_rock_logo_style.png',
+        'wood_2-1': '/images/catan_wood_logo_style.png',
+        'wheat_2-1': '/images/catan_wheat_logo_style.png',
+        'generic_3-1': '/images/catan_generic_logo.png',
+    };
+
+    const renderBoat = (portType: string, key: string, midX: number, midY: number, angle: number) => {
+        const portSize = hexWidth * 1.4;
+        const portOffset = portSize / 2;
+
+        if (tileStyle === 'simple') {
+            const logoSrc = portLogoStyleMap[portType];
+            return (
+                <div
+                    key={key}
+                    style={{
+                        position: 'absolute',
+                        left: `${midX - portOffset}px`,
+                        top: `${midY - portOffset}px`,
+                        width: `${portSize}px`,
+                        height: `${portSize}px`,
+                        transform: `rotate(${angle}deg)`,
+                        transformOrigin: 'center',
+                    }}
+                >
+                    <img
+                        src="/images/catan_boat_style.png"
+                        alt={`Port ${portType}`}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            pointerEvents: 'none',
+                        }}
+                    />
+                    {logoSrc && (
+                        <img
+                            src={logoSrc}
+                            alt={`${portType} logo`}
+                            style={{
+                                position: 'absolute',
+                                top: '68%',
+                                left: '53%',
+                                transform: 'translate(-50%, -50%)',
+                                width: portType === 'generic_3-1' ? '11%' : '22%',
+                                height: portType === 'generic_3-1' ? '11%' : '22%',
+                                objectFit: 'contain',
+                                pointerEvents: 'none',
+                            }}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        const boatImage = `/images/catan_boat_${portType}.png`;
+        return (
+            <div
+                key={key}
+                style={{
+                    position: 'absolute',
+                    left: `${midX - portOffset}px`,
+                    top: `${midY - portOffset}px`,
+                    width: `${portSize}px`,
+                    height: `${portSize}px`,
+                    transform: `rotate(${angle}deg)`,
+                    transformOrigin: 'center',
+                }}
+            >
+                <img
+                    src={boatImage}
+                    alt={`Port ${portType}`}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        pointerEvents: 'none',
+                    }}
+                />
+            </div>
+        );
     };
 
     const getResourceCounts = () => {
@@ -1931,7 +2027,7 @@ export default function CatanPage() {
         <main
             className="h-screen w-screen flex flex-col items-center justify-center overflow-hidden"
             style={{
-                backgroundImage: 'url(/images/catan_water.png)',
+                backgroundImage: tileStyle === 'simple' ? 'url(/images/catan_water_style.jpg)' : 'url(/images/catan_water.png)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
@@ -2003,54 +2099,74 @@ export default function CatanPage() {
                             }}
                             viewBox={`-500 -500 ${boardWidth + 1000} ${boardHeight + 1000}`}
                         >
-                            <defs>
-                                <filter id="borderFade" x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox">
-                                    <feGaussianBlur in="SourceGraphic" stdDeviation="8" />
-                                </filter>
-                            </defs>
-
-                            <g>
-                                {perimeterPoints.map((point, idx) => {
-                                    const nextIdx = (idx + 1) % perimeterPoints.length;
-                                    const nextPoint = perimeterPoints[nextIdx];
-
-                                    return (
-                                        <line
-                                            key={`border-outer-${idx}`}
-                                            x1={point.x}
-                                            y1={point.y}
-                                            x2={nextPoint.x}
-                                            y2={nextPoint.y}
-                                            stroke="#E6D7AA"
-                                            strokeWidth="8"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            opacity="0.2"
-                                        />
-                                    );
-                                })}
-                            </g>
-
-                            <g filter="url(#borderFade)">
-                                {perimeterPoints.map((point, idx) => {
-                                    const nextIdx = (idx + 1) % perimeterPoints.length;
-                                    const nextPoint = perimeterPoints[nextIdx];
-
-                                    return (
-                                        <line
-                                            key={`border-${idx}`}
-                                            x1={point.x}
-                                            y1={point.y}
-                                            x2={nextPoint.x}
-                                            y2={nextPoint.y}
-                                            stroke="#E6D7AA"
-                                            strokeWidth="25"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    );
-                                })}
-                            </g>
+                            {tileStyle === 'classic' ? (
+                                <>
+                                    <defs>
+                                        <filter id="borderFade" x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox">
+                                            <feGaussianBlur in="SourceGraphic" stdDeviation="8" />
+                                        </filter>
+                                    </defs>
+                                    <g>
+                                        {perimeterPoints.map((point, idx) => {
+                                            const nextIdx = (idx + 1) % perimeterPoints.length;
+                                            const nextPoint = perimeterPoints[nextIdx];
+                                            return (
+                                                <line
+                                                    key={`border-outer-${idx}`}
+                                                    x1={point.x}
+                                                    y1={point.y}
+                                                    x2={nextPoint.x}
+                                                    y2={nextPoint.y}
+                                                    stroke="#E6D7AA"
+                                                    strokeWidth="8"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    opacity="0.2"
+                                                />
+                                            );
+                                        })}
+                                    </g>
+                                    <g filter="url(#borderFade)">
+                                        {perimeterPoints.map((point, idx) => {
+                                            const nextIdx = (idx + 1) % perimeterPoints.length;
+                                            const nextPoint = perimeterPoints[nextIdx];
+                                            return (
+                                                <line
+                                                    key={`border-${idx}`}
+                                                    x1={point.x}
+                                                    y1={point.y}
+                                                    x2={nextPoint.x}
+                                                    y2={nextPoint.y}
+                                                    stroke="#E6D7AA"
+                                                    strokeWidth="25"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                            );
+                                        })}
+                                    </g>
+                                </>
+                            ) : (
+                                <g>
+                                    {perimeterPoints.map((point, idx) => {
+                                        const nextIdx = (idx + 1) % perimeterPoints.length;
+                                        const nextPoint = perimeterPoints[nextIdx];
+                                        return (
+                                            <line
+                                                key={`border-simple-${idx}`}
+                                                x1={point.x}
+                                                y1={point.y}
+                                                x2={nextPoint.x}
+                                                y2={nextPoint.y}
+                                                stroke="#E6D7AA"
+                                                strokeWidth="15"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        );
+                                    })}
+                                </g>
+                            )}
                         </svg>
                     )}
 
@@ -2066,54 +2182,74 @@ export default function CatanPage() {
                             }}
                             viewBox={`-500 -500 ${boardWidth + 1000} ${boardHeight + 1000}`}
                         >
-                            <defs>
-                                <filter id="borderFade4" x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox">
-                                    <feGaussianBlur in="SourceGraphic" stdDeviation="8" />
-                                </filter>
-                            </defs>
-
-                            <g>
-                                {perimeterPoints.map((point, idx) => {
-                                    const nextIdx = (idx + 1) % perimeterPoints.length;
-                                    const nextPoint = perimeterPoints[nextIdx];
-
-                                    return (
-                                        <line
-                                            key={`border-outer-4-${idx}`}
-                                            x1={point.x}
-                                            y1={point.y}
-                                            x2={nextPoint.x}
-                                            y2={nextPoint.y}
-                                            stroke="#E6D7AA"
-                                            strokeWidth="8"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            opacity="0.2"
-                                        />
-                                    );
-                                })}
-                            </g>
-
-                            <g filter="url(#borderFade4)">
-                                {perimeterPoints.map((point, idx) => {
-                                    const nextIdx = (idx + 1) % perimeterPoints.length;
-                                    const nextPoint = perimeterPoints[nextIdx];
-
-                                    return (
-                                        <line
-                                            key={`border-4-${idx}`}
-                                            x1={point.x}
-                                            y1={point.y}
-                                            x2={nextPoint.x}
-                                            y2={nextPoint.y}
-                                            stroke="#E6D7AA"
-                                            strokeWidth="25"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    );
-                                })}
-                            </g>
+                            {tileStyle === 'classic' ? (
+                                <>
+                                    <defs>
+                                        <filter id="borderFade4" x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox">
+                                            <feGaussianBlur in="SourceGraphic" stdDeviation="8" />
+                                        </filter>
+                                    </defs>
+                                    <g>
+                                        {perimeterPoints.map((point, idx) => {
+                                            const nextIdx = (idx + 1) % perimeterPoints.length;
+                                            const nextPoint = perimeterPoints[nextIdx];
+                                            return (
+                                                <line
+                                                    key={`border-outer-4-${idx}`}
+                                                    x1={point.x}
+                                                    y1={point.y}
+                                                    x2={nextPoint.x}
+                                                    y2={nextPoint.y}
+                                                    stroke="#E6D7AA"
+                                                    strokeWidth="8"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    opacity="0.2"
+                                                />
+                                            );
+                                        })}
+                                    </g>
+                                    <g filter="url(#borderFade4)">
+                                        {perimeterPoints.map((point, idx) => {
+                                            const nextIdx = (idx + 1) % perimeterPoints.length;
+                                            const nextPoint = perimeterPoints[nextIdx];
+                                            return (
+                                                <line
+                                                    key={`border-4-${idx}`}
+                                                    x1={point.x}
+                                                    y1={point.y}
+                                                    x2={nextPoint.x}
+                                                    y2={nextPoint.y}
+                                                    stroke="#E6D7AA"
+                                                    strokeWidth="25"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                            );
+                                        })}
+                                    </g>
+                                </>
+                            ) : (
+                                <g>
+                                    {perimeterPoints.map((point, idx) => {
+                                        const nextIdx = (idx + 1) % perimeterPoints.length;
+                                        const nextPoint = perimeterPoints[nextIdx];
+                                        return (
+                                            <line
+                                                key={`border-simple-4-${idx}`}
+                                                x1={point.x}
+                                                y1={point.y}
+                                                x2={nextPoint.x}
+                                                y2={nextPoint.y}
+                                                stroke="#E6D7AA"
+                                                strokeWidth="15"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        );
+                                    })}
+                                </g>
+                            )}
                         </svg>
                     )}
 
@@ -2129,54 +2265,74 @@ export default function CatanPage() {
                             }}
                             viewBox={`-500 -500 ${boardWidth + 1000} ${boardHeight + 1000}`}
                         >
-                            <defs>
-                                <filter id="bigIslandBorderFade" x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox">
-                                    <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
-                                </filter>
-                            </defs>
-
-                            <g>
-                                {buildBigIslandPerimeter.map((point, idx) => {
-                                    const nextIdx = (idx + 1) % buildBigIslandPerimeter.length;
-                                    const nextPoint = buildBigIslandPerimeter[nextIdx];
-
-                                    return (
-                                        <line
-                                            key={`big-island-border-outer-${idx}`}
-                                            x1={point.x}
-                                            y1={point.y}
-                                            x2={nextPoint.x}
-                                            y2={nextPoint.y}
-                                            stroke="#E6D7AA"
-                                            strokeWidth="6"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            opacity="0.25"
-                                        />
-                                    );
-                                })}
-                            </g>
-
-                            <g filter="url(#bigIslandBorderFade)">
-                                {buildBigIslandPerimeter.map((point, idx) => {
-                                    const nextIdx = (idx + 1) % buildBigIslandPerimeter.length;
-                                    const nextPoint = buildBigIslandPerimeter[nextIdx];
-
-                                    return (
-                                        <line
-                                            key={`big-island-border-${idx}`}
-                                            x1={point.x}
-                                            y1={point.y}
-                                            x2={nextPoint.x}
-                                            y2={nextPoint.y}
-                                            stroke="#E6D7AA"
-                                            strokeWidth="20"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    );
-                                })}
-                            </g>
+                            {tileStyle === 'classic' ? (
+                                <>
+                                    <defs>
+                                        <filter id="bigIslandBorderFade" x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox">
+                                            <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
+                                        </filter>
+                                    </defs>
+                                    <g>
+                                        {buildBigIslandPerimeter.map((point, idx) => {
+                                            const nextIdx = (idx + 1) % buildBigIslandPerimeter.length;
+                                            const nextPoint = buildBigIslandPerimeter[nextIdx];
+                                            return (
+                                                <line
+                                                    key={`big-island-border-outer-${idx}`}
+                                                    x1={point.x}
+                                                    y1={point.y}
+                                                    x2={nextPoint.x}
+                                                    y2={nextPoint.y}
+                                                    stroke="#E6D7AA"
+                                                    strokeWidth="6"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    opacity="0.25"
+                                                />
+                                            );
+                                        })}
+                                    </g>
+                                    <g filter="url(#bigIslandBorderFade)">
+                                        {buildBigIslandPerimeter.map((point, idx) => {
+                                            const nextIdx = (idx + 1) % buildBigIslandPerimeter.length;
+                                            const nextPoint = buildBigIslandPerimeter[nextIdx];
+                                            return (
+                                                <line
+                                                    key={`big-island-border-${idx}`}
+                                                    x1={point.x}
+                                                    y1={point.y}
+                                                    x2={nextPoint.x}
+                                                    y2={nextPoint.y}
+                                                    stroke="#E6D7AA"
+                                                    strokeWidth="20"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                            );
+                                        })}
+                                    </g>
+                                </>
+                            ) : (
+                                <g>
+                                    {buildBigIslandPerimeter.map((point, idx) => {
+                                        const nextIdx = (idx + 1) % buildBigIslandPerimeter.length;
+                                        const nextPoint = buildBigIslandPerimeter[nextIdx];
+                                        return (
+                                            <line
+                                                key={`big-island-border-simple-${idx}`}
+                                                x1={point.x}
+                                                y1={point.y}
+                                                x2={nextPoint.x}
+                                                y2={nextPoint.y}
+                                                stroke="#E6D7AA"
+                                                strokeWidth="15"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        );
+                                    })}
+                                </g>
+                            )}
                         </svg>
                     )}
 
@@ -2199,35 +2355,7 @@ export default function CatanPage() {
                                 const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI) + 180;
 
                                 const portType = generateBigIslandPortAssignments[idx];
-                                const boatImage = `/images/catan_boat_${portType}.png`;
-                                const portSize = hexWidth * 1.4;
-                                const portOffset = portSize / 2;
-
-                                return (
-                                    <div
-                                        key={`big-island-port-${idx}`}
-                                        style={{
-                                            position: 'absolute',
-                                            left: `${midX - portOffset}px`,
-                                            top: `${midY - portOffset}px`,
-                                            width: `${portSize}px`,
-                                            height: `${portSize}px`,
-                                            transform: `rotate(${angle}deg)`,
-                                            transformOrigin: 'center',
-                                        }}
-                                    >
-                                        <img
-                                            src={boatImage}
-                                            alt={`Big Island Port ${portType}`}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'contain',
-                                                pointerEvents: 'none',
-                                            }}
-                                        />
-                                    </div>
-                                );
+                                return renderBoat(portType, `big-island-port-${idx}`, midX, midY, angle);
                             })}
                         </div>
                     )}
@@ -2245,35 +2373,7 @@ export default function CatanPage() {
                                 const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI) + 180;
 
                                 const portType = generatePortAssignments[idx];
-                                const boatImage = `/images/catan_boat_${portType}.png`;
-                                const portSize = hexWidth * 1.4;
-                                const portOffset = portSize / 2;
-
-                                return (
-                                    <div
-                                        key={`port-${idx}`}
-                                        style={{
-                                            position: 'absolute',
-                                            left: `${midX - portOffset}px`,
-                                            top: `${midY - portOffset}px`,
-                                            width: `${portSize}px`,
-                                            height: `${portSize}px`,
-                                            transform: `rotate(${angle}deg)`,
-                                            transformOrigin: 'center',
-                                        }}
-                                    >
-                                        <img
-                                            src={boatImage}
-                                            alt={`Port ${portType}`}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'contain',
-                                                pointerEvents: 'none',
-                                            }}
-                                        />
-                                    </div>
-                                );
+                                return renderBoat(portType, `port-${idx}`, midX, midY, angle);
                             })}
                         </div>
                     )}
@@ -2291,35 +2391,7 @@ export default function CatanPage() {
                                 const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI) + 180;
 
                                 const portType = generatePortAssignments[idx];
-                                const boatImage = `/images/catan_boat_${portType}.png`;
-                                const portSize = hexWidth * 1.4;
-                                const portOffset = portSize / 2;
-
-                                return (
-                                    <div
-                                        key={`port-${idx}`}
-                                        style={{
-                                            position: 'absolute',
-                                            left: `${midX - portOffset}px`,
-                                            top: `${midY - portOffset}px`,
-                                            width: `${portSize}px`,
-                                            height: `${portSize}px`,
-                                            transform: `rotate(${angle}deg)`,
-                                            transformOrigin: 'center',
-                                        }}
-                                    >
-                                        <img
-                                            src={boatImage}
-                                            alt={`Port ${portType}`}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'contain',
-                                                pointerEvents: 'none',
-                                            }}
-                                        />
-                                    </div>
-                                );
+                                return renderBoat(portType, `port-${idx}`, midX, midY, angle);
                             })}
                         </div>
                     )}
@@ -2327,35 +2399,7 @@ export default function CatanPage() {
                     {expansion === 'seafarers' && scenario === '4-islands' && fourIslandsPortPlacements.length > 0 && (
                         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                             {fourIslandsPortPlacements.map((placement, idx) => {
-                                const boatImage = `/images/catan_boat_${placement.portType}.png`;
-                                const portSize = hexWidth * 1.4;
-                                const portOffset = portSize / 2;
-
-                                return (
-                                    <div
-                                        key={`4-islands-port-${idx}`}
-                                        style={{
-                                            position: 'absolute',
-                                            left: `${placement.x - portOffset}px`,
-                                            top: `${placement.y - portOffset}px`,
-                                            width: `${portSize}px`,
-                                            height: `${portSize}px`,
-                                            transform: `rotate(${placement.angle}deg)`,
-                                            transformOrigin: 'center',
-                                        }}
-                                    >
-                                        <img
-                                            src={boatImage}
-                                            alt={`Port ${placement.portType}`}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'contain',
-                                                pointerEvents: 'none',
-                                            }}
-                                        />
-                                    </div>
-                                );
+                                return renderBoat(placement.portType, `4-islands-port-${idx}`, placement.x, placement.y, placement.angle);
                             })}
                         </div>
                     )}
@@ -2517,53 +2561,6 @@ export default function CatanPage() {
                                 />
                             )}
 
-                            <svg
-                                style={{
-                                    position: 'absolute',
-                                    inset: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    pointerEvents: 'none',
-                                }}
-                                viewBox={`0 0 ${hexWidth} ${hexHeight}`}
-                                preserveAspectRatio="none"
-                            >
-                                <defs>
-                                    <radialGradient
-                                        id={`border-gradient-${hex.id}`}
-                                        cx="50%"
-                                        cy="50%"
-                                        r="50%"
-                                        fx="50%"
-                                        fy="50%"
-                                    >
-                                        <stop offset="60%" stopColor="rgba(230, 215, 170, 0)" />
-                                        <stop offset="85%" stopColor="rgba(230, 215, 170, 0.5)" />
-                                        <stop offset="100%" stopColor="rgba(230, 215, 170, 1)" />
-                                    </radialGradient>
-                                </defs>
-                                {hex.resourceType !== 'water' && (
-                                    <>
-                                        <polygon
-                                            points={getHexagonPoints(hexWidth / 2, hexHeight / 2)}
-                                            fill={`url(#border-gradient-${hex.id})`}
-                                        />
-                                        <polygon
-                                            points={getHexagonPoints(hexWidth / 2, hexHeight / 2)}
-                                            fill="none"
-                                            stroke="#E6D7AA"
-                                            strokeWidth="4"
-                                        />
-                                        <polygon
-                                            points={getOuterHexagonPoints(hexWidth / 2, hexHeight / 2, 3)}
-                                            fill="none"
-                                            stroke="#E6D7AA"
-                                            strokeWidth="2"
-                                            opacity="0.7"
-                                        />
-                                    </>
-                                )}
-                            </svg>
 
                             {hex.number !== undefined && (() => {
                                 const effectiveNumber = getEffectiveNumber(hex.id, hex.number);
@@ -2632,6 +2629,87 @@ export default function CatanPage() {
                             })()}
                         </div>
                     ))}
+
+                    <svg
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            width: `${boardWidth}px`,
+                            height: `${boardHeight}px`,
+                            pointerEvents: 'none',
+                            zIndex: 20,
+                        }}
+                        viewBox={`0 0 ${boardWidth} ${boardHeight}`}
+                    >
+                        {/* TEMPORARY: classic uses simple borders with fade. To revert, uncomment the block below and remove this one. */}
+                        <defs>
+                            <filter id="borderSoftFade" x="-10%" y="-10%" width="120%" height="120%">
+                                <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+                            </filter>
+                        </defs>
+                        {hexes.filter(hex => hex.resourceType !== 'water').map((hex) => (
+                            <polygon
+                                key={`border-${hex.id}`}
+                                points={getHexagonPoints(hexWidth / 2 + hex.x, hexHeight / 2 + hex.y)}
+                                fill="none"
+                                stroke="#E6D7AA"
+                                strokeWidth="13"
+                                filter={tileStyle === 'classic' ? "url(#borderSoftFade)" : undefined}
+                            />
+                        ))}
+                        {/* ORIGINAL CLASSIC BORDERS - uncomment to restore:
+                        {tileStyle === 'classic' && (
+                            <defs>
+                                {hexes.filter(hex => hex.resourceType !== 'water').map((hex) => (
+                                    <radialGradient
+                                        key={`gradient-${hex.id}`}
+                                        id={`border-gradient-${hex.id}`}
+                                        cx="50%"
+                                        cy="50%"
+                                        r="50%"
+                                        fx="50%"
+                                        fy="50%"
+                                    >
+                                        <stop offset="60%" stopColor="rgba(230, 215, 170, 0)" />
+                                        <stop offset="85%" stopColor="rgba(230, 215, 170, 0.5)" />
+                                        <stop offset="100%" stopColor="rgba(230, 215, 170, 1)" />
+                                    </radialGradient>
+                                ))}
+                            </defs>
+                        )}
+                        {hexes.filter(hex => hex.resourceType !== 'water').map((hex) => (
+                            tileStyle === 'classic' ? (
+                                <g key={`classic-border-${hex.id}`}>
+                                    <polygon
+                                        points={getHexagonPoints(hexWidth / 2 + hex.x, hexHeight / 2 + hex.y)}
+                                        fill={`url(#border-gradient-${hex.id})`}
+                                    />
+                                    <polygon
+                                        points={getHexagonPoints(hexWidth / 2 + hex.x, hexHeight / 2 + hex.y)}
+                                        fill="none"
+                                        stroke="#E6D7AA"
+                                        strokeWidth="4"
+                                    />
+                                    <polygon
+                                        points={getOuterHexagonPoints(hexWidth / 2 + hex.x, hexHeight / 2 + hex.y, 3)}
+                                        fill="none"
+                                        stroke="#E6D7AA"
+                                        strokeWidth="2"
+                                        opacity="0.7"
+                                    />
+                                </g>
+                            ) : (
+                                <polygon
+                                    key={`simple-border-${hex.id}`}
+                                    points={getHexagonPoints(hexWidth / 2 + hex.x, hexHeight / 2 + hex.y)}
+                                    fill="none"
+                                    stroke="#E6D7AA"
+                                    strokeWidth="13"
+                                />
+                            )
+                        ))}
+                        END ORIGINAL CLASSIC BORDERS */}
+                    </svg>
                 </div>
             </div>
 
@@ -2657,6 +2735,30 @@ export default function CatanPage() {
                     <label htmlFor="cities-and-knights" className="text-sm font-medium text-gray-700">
                         Cities & Knights
                     </label>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-gray-700 px-2">Style</label>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setTileStyle('classic')}
+                            className={`flex-1 px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${tileStyle === 'classic'
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+                                }`}
+                        >
+                            Classic
+                        </button>
+                        <button
+                            onClick={() => setTileStyle('simple')}
+                            className={`flex-1 px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${tileStyle === 'simple'
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+                                }`}
+                        >
+                            Simple
+                        </button>
+                    </div>
                 </div>
 
                 {expansion === 'classic' ? (

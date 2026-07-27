@@ -1,14 +1,14 @@
 'use client';
 
 import React from 'react';
-import { getBuildingsForVariant, RESOURCE_LOGOS, RESOURCE_LOGOS_STYLE, BuildingCost, COMMODITY_COLORS, COMMODITY_LABELS } from '@/lib/building-costs';
+import { getBuildingsForVariant, getResourceLogo, BuildingCost, COMMODITY_COLORS, COMMODITY_LABELS } from '@/lib/building-costs';
 import { getImageUrl } from '@/lib/image-mapping';
 
 interface BuildingCostsLegendProps {
-  expansion: 'classic' | 'seafarers';
+  expansion: string;
   citiesAndKnights: boolean;
   position: 'bottom-left' | 'top-right';
-  tileStyle?: 'classic' | 'simple';
+  tileStyle?: string;
 }
 
 export function BuildingCostsLegend({
@@ -57,7 +57,7 @@ export function BuildingCostsLegend({
 interface BuildingRowProps {
   building: BuildingCost;
   isCompact: boolean;
-  tileStyle: 'classic' | 'simple';
+  tileStyle: string;
 }
 
 function BuildingRow({ building, isCompact, tileStyle }: BuildingRowProps) {
@@ -83,14 +83,16 @@ function BuildingRow({ building, isCompact, tileStyle }: BuildingRowProps) {
 
       {/* Resources */}
       <div className="flex items-center gap-0.5 flex-grow">
-        {building.costs.map((cost, idx) => (
+        {building.costs.map((cost, idx) => {
+          const logo = getResourceLogo(cost.resource, tileStyle);
+          return (
           <div key={`${cost.resource}-${idx}`} className="flex items-center gap-0">
-              {(tileStyle === 'simple' ? RESOURCE_LOGOS_STYLE : RESOURCE_LOGOS)[cost.resource] ? (
+              {logo ? (
                 // Repeat resource icons based on amount
                 Array.from({ length: cost.amount }).map((_, iconIdx) => (
                   <img
                     key={`${cost.resource}-icon-${iconIdx}`}
-                    src={getImageUrl((tileStyle === 'simple' ? RESOURCE_LOGOS_STYLE : RESOURCE_LOGOS)[cost.resource]!)}
+                    src={getImageUrl(logo)}
                     alt={cost.resource}
                     style={{ width: iconSize, height: iconSize }}
                     className="object-contain"
@@ -113,7 +115,8 @@ function BuildingRow({ building, isCompact, tileStyle }: BuildingRowProps) {
                 </>
               )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Victory Points */}

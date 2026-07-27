@@ -3,13 +3,30 @@
 import React from 'react';
 import Link from 'next/link';
 
-interface GameSettingsPanelProps {
-  children?: React.ReactNode;
-  expansion?: 'classic' | 'seafarers';
-  onExpansionChange?: (expansion: 'classic' | 'seafarers') => void;
+export interface SettingsOption {
+  value: string;
+  label: string;
 }
 
-export function GameSettingsPanel({ children, expansion, onExpansionChange }: GameSettingsPanelProps) {
+interface GameSettingsPanelProps {
+  children?: React.ReactNode;
+  expansion?: string;
+  onExpansionChange?: (expansion: string) => void;
+  /** Expansions to offer. Defaults to the base Catan set. */
+  expansionOptions?: SettingsOption[];
+}
+
+const DEFAULT_EXPANSION_OPTIONS: SettingsOption[] = [
+  { value: 'classic', label: 'Classic' },
+  { value: 'seafarers', label: 'Seafarers' },
+];
+
+export function GameSettingsPanel({
+  children,
+  expansion,
+  onExpansionChange,
+  expansionOptions = DEFAULT_EXPANSION_OPTIONS,
+}: GameSettingsPanelProps) {
   return (
     <>
       {/* Transparent hover zone */}
@@ -29,12 +46,15 @@ export function GameSettingsPanel({ children, expansion, onExpansionChange }: Ga
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Expansion</label>
               <select
-                value={expansion || 'classic'}
-                onChange={(e) => onExpansionChange(e.target.value as 'classic' | 'seafarers')}
+                value={expansion || expansionOptions[0]?.value}
+                onChange={(e) => onExpansionChange(e.target.value)}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="classic">Classic</option>
-                <option value="seafarers">Seafarers</option>
+                {expansionOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
           )}

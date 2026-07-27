@@ -136,27 +136,39 @@ export const CITIES_AND_KNIGHTS_BUILDINGS: BuildingCost[] = [
   }
 ];
 
-export const RESOURCE_LOGOS: Record<ResourceType, string | null> = {
-  brick: '/images/catan_brick_logo.png',
-  wood: '/images/catan_wood_logo.png',
-  wheat: '/images/catan_wheat_logo.png',
-  sheep: '/images/catan_sheep_logo.png',
-  ore: '/images/catan_rock_logo.png',
-  paper: null,
-  cloth: null,
-  coin: null
+/**
+ * Resource icons used by the legend, keyed by tile style.
+ * A `null` entry falls back to the coloured commodity badge.
+ *
+ * To support a new tile style, add a matching key here.
+ */
+export const RESOURCE_LOGOS_BY_STYLE: Record<string, Record<ResourceType, string | null>> = {
+  classic: {
+    brick: '/images/catan_brick_logo.png',
+    wood: '/images/catan_wood_logo.png',
+    wheat: '/images/catan_wheat_logo.png',
+    sheep: '/images/catan_sheep_logo.png',
+    ore: '/images/catan_rock_logo.png',
+    paper: null,
+    cloth: null,
+    coin: null
+  },
+  simple: {
+    brick: '/images/catan_brick_logo_style.png',
+    wood: '/images/catan_wood_logo_style.png',
+    wheat: '/images/catan_wheat_logo_style.png',
+    sheep: '/images/catan_sheep_logo_stle.png',
+    ore: '/images/catan_rock_logo_style.png',
+    paper: null,
+    cloth: null,
+    coin: null
+  }
 };
 
-export const RESOURCE_LOGOS_STYLE: Record<ResourceType, string | null> = {
-  brick: '/images/catan_brick_logo_style.png',
-  wood: '/images/catan_wood_logo_style.png',
-  wheat: '/images/catan_wheat_logo_style.png',
-  sheep: '/images/catan_sheep_logo_stle.png',
-  ore: '/images/catan_rock_logo_style.png',
-  paper: null,
-  cloth: null,
-  coin: null
-};
+export function getResourceLogo(resource: ResourceType, tileStyle: string): string | null {
+  const set = RESOURCE_LOGOS_BY_STYLE[tileStyle] ?? RESOURCE_LOGOS_BY_STYLE.classic;
+  return set[resource];
+}
 
 export const COMMODITY_COLORS: Record<'science' | 'trade' | 'politics', string> = {
   science: '#22c55e', // green
@@ -170,22 +182,58 @@ export const COMMODITY_LABELS: Record<'science' | 'trade' | 'politics', string> 
   politics: 'Coin'
 };
 
+export interface VariantContext {
+  expansion: string;
+  citiesAndKnights: boolean;
+}
+
+/**
+ * A group of buildings contributed by one expansion or module.
+ *
+ * ---------------------------------------------------------------------------
+ * TO ADD BUILDINGS FOR A NEW EXPANSION
+ * ---------------------------------------------------------------------------
+ * Append a set below with an `appliesTo` test. Sets are applied in order, so a
+ * later set can `removes` entries an earlier one added.
+ */
+export interface BuildingSet {
+  id: string;
+  buildings: BuildingCost[];
+  /** Building ids this set removes, e.g. C&K replacing development cards. */
+  removes?: string[];
+  appliesTo: (ctx: VariantContext) => boolean;
+}
+
+export const BUILDING_SETS: BuildingSet[] = [
+  {
+    id: 'base',
+    buildings: BASE_BUILDINGS,
+    appliesTo: () => true
+  },
+  {
+    id: 'cities-and-knights',
+    buildings: CITIES_AND_KNIGHTS_BUILDINGS,
+    removes: ['development-card'],
+    appliesTo: ctx => ctx.citiesAndKnights
+  },
+  {
+    id: 'seafarers',
+    buildings: SEAFARERS_BUILDINGS,
+    appliesTo: ctx => ctx.expansion === 'seafarers'
+  }
+];
+
 export function getBuildingsForVariant(
-  expansion: 'classic' | 'seafarers',
+  expansion: string,
   citiesAndKnights: boolean
 ): BuildingCost[] {
-  let buildings = [...BASE_BUILDINGS];
+  const ctx: VariantContext = { expansion, citiesAndKnights };
 
-  // Cities & Knights replaces development cards
-  if (citiesAndKnights) {
-    buildings = buildings.filter(b => b.id !== 'development-card');
-    buildings = [...buildings, ...CITIES_AND_KNIGHTS_BUILDINGS];
-  }
-
-  // Seafarers adds ships
-  if (expansion === 'seafarers') {
-    buildings = [...buildings, ...SEAFARERS_BUILDINGS];
-  }
-
-  return buildings;
+  return BUILDING_SETS.filter(set => set.appliesTo(ctx)).reduce<BuildingCost[]>(
+    (buildings, set) => [
+      ...buildings.filter(b => !set.removes?.includes(b.id)),
+      ...set.buildings
+    ],
+    []
+  );
 }

@@ -1,4 +1,4 @@
-import { getImageUrl } from '@/lib/image-mapping';
+import { assetUrl } from '@/lib/asset-url';
 import type { ResourceType } from '@/lib/building-costs';
 import type { TileStyleId, TileTypeId } from './types';
 
@@ -131,7 +131,7 @@ export function getTileType(id: TileTypeId): TileType {
 /** Resolved artwork URL for a tile in a given style, or `null` for none. */
 export function getTileImage(id: TileTypeId, style: TileStyleId): string | null {
     const source = getTileType(id).images[style];
-    return source ? getImageUrl(source) : null;
+    return source ? assetUrl(source) : null;
 }
 
 export function isWater(id: TileTypeId): boolean {

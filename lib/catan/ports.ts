@@ -1,3 +1,4 @@
+import { assetUrl } from '@/lib/asset-url';
 import type { ResourceType } from '@/lib/building-costs';
 import type { PortTypeId, TileStyleId } from './types';
 
@@ -88,13 +89,16 @@ export function getPortType(id: PortTypeId): PortType | null {
 
 // Boat artwork is served from `public/` rather than through
 // `lib/image-mapping`, matching how these assets have always been loaded.
+// `assetUrl` swaps in the display-sized copy when one has been generated.
 
 export function getPortArt(id: PortTypeId, style: TileStyleId): string | null {
-    return getPortType(id)?.art[style] ?? null;
+    const source = getPortType(id)?.art[style];
+    return source ? assetUrl(source) : null;
 }
 
 export function getPortLogo(id: PortTypeId, style: TileStyleId): string | null {
-    return getPortType(id)?.logo[style] ?? null;
+    const source = getPortType(id)?.logo[style];
+    return source ? assetUrl(source) : null;
 }
 
 export function getPortLogoScale(id: PortTypeId): number {

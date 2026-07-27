@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { getBuildingsForVariant, getResourceLogo, BuildingCost, COMMODITY_COLORS, COMMODITY_LABELS } from '@/lib/building-costs';
-import { getImageUrl } from '@/lib/image-mapping';
+import { assetUrl } from '@/lib/asset-url';
 
 interface BuildingCostsLegendProps {
   expansion: string;
@@ -92,7 +92,7 @@ function BuildingRow({ building, isCompact, tileStyle }: BuildingRowProps) {
                 Array.from({ length: cost.amount }).map((_, iconIdx) => (
                   <img
                     key={`${cost.resource}-icon-${iconIdx}`}
-                    src={getImageUrl(logo)}
+                    src={assetUrl(logo)}
                     alt={cost.resource}
                     style={{ width: iconSize, height: iconSize }}
                     className="object-contain"

@@ -5,6 +5,9 @@ import { BuildingCostsLegend } from '@/components/BuildingCostsLegend';
 import { GameSettingsPanel } from '@/components/GameSettingsPanel';
 import { CatanBoard } from '@/components/catan/CatanBoard';
 import { CatanSettings } from '@/components/catan/CatanSettings';
+import { useAssetPreload } from '@/components/catan/useAssetPreload';
+import { assetUrl } from '@/lib/asset-url';
+import { catanImageUrls } from '@/lib/catan/assets';
 import { generateBoard } from '@/lib/catan/generator';
 import { createHexMetrics } from '@/lib/catan/hex-geometry';
 import { DEFAULT_TILE_STYLE, getTileStyle } from '@/lib/catan/styles';
@@ -33,6 +36,10 @@ export default function CatanPage() {
     // Number tokens the player has picked up and swapped by hand.
     const [selectedHexId, setSelectedHexId] = useState<string | null>(null);
     const [numberSwaps, setNumberSwaps] = useState<Map<string, number>>(new Map());
+
+    // Warm every tile, boat and icon once, so changing style or expansion
+    // later never waits on the network.
+    useAssetPreload(useMemo(() => catanImageUrls(), []));
 
     const metrics = useMemo(() => createHexMetrics(), []);
     const variant = useMemo(
@@ -100,7 +107,7 @@ export default function CatanPage() {
         <main
             className="h-screen w-screen flex flex-col items-center justify-center overflow-hidden"
             style={{
-                backgroundImage: `url(${style.background})`,
+                backgroundImage: `url(${assetUrl(style.background)})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { assetUrl } from '@/lib/asset-url';
 import { getPortArt, getPortLogo, getPortLogoScale, getPortType } from '@/lib/catan/ports';
 import type { TileStyle } from '@/lib/catan/styles';
 import type { PortPlacement } from '@/lib/catan/types';
@@ -24,7 +25,7 @@ export function PortBoat({ placement, style, hexWidth }: PortBoatProps) {
     const size = hexWidth * style.port.sizeFactor;
     const boat =
         style.port.mode === 'overlay'
-            ? style.port.baseImage
+            ? style.port.baseImage && assetUrl(style.port.baseImage)
             : getPortArt(placement.portType, style.id);
 
     if (!boat) return null;

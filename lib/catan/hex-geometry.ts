@@ -1,5 +1,9 @@
 import { inchesToPixels } from '@/lib/dimensions';
-import type { Hex, HexMetrics, Point, RowConfig } from './types';
+import { HEX_SIDES } from './types';
+import type { Hex, HexMetrics, HexSide, Point, RowConfig } from './types';
+
+export { HEX_SIDES };
+export type { HexSide };
 
 /**
  * Pure hex-grid geometry. Nothing here knows about Catan rules — it only turns
@@ -48,48 +52,61 @@ export function indexToRowCol(
     return null;
 }
 
+export function sideIndex(side: HexSide): number {
+    return HEX_SIDES.indexOf(side);
+}
+
 /**
- * Neighbouring row/col pairs. Which hexes touch across rows depends on how the
- * rows are offset relative to each other, so the offset delta drives the
- * lookup rather than a fixed odd/even rule.
+ * The hex across one side, or `null` when that side faces open space.
+ *
+ * Which column a row touches above and below depends on how the rows are
+ * offset: when this row sits further right it lines up with columns c and
+ * c + 1, when further left with c - 1 and c.
  */
+export function neighborAt(
+    rows: readonly RowConfig[],
+    rowIndex: number,
+    colIndex: number,
+    side: HexSide | number
+): { row: number; col: number } | null {
+    const row = rows[rowIndex];
+    if (!row) return null;
+
+    const dir = typeof side === 'number' ? side : sideIndex(side);
+
+    const at = (r: number, c: number) => {
+        const target = rows[r];
+        if (!target || c < 0 || c >= target.count) return null;
+        return { row: r, col: c };
+    };
+
+    const across = (otherIndex: number, rightHandSide: boolean) => {
+        const other = rows[otherIndex];
+        if (!other) return null;
+        const shift = row.offset > other.offset ? 0 : -1;
+        return at(otherIndex, colIndex + shift + (rightHandSide ? 1 : 0));
+    };
+
+    switch (dir) {
+        case 0: return across(rowIndex - 1, true);   // ne
+        case 1: return at(rowIndex, colIndex + 1);   // e
+        case 2: return across(rowIndex + 1, true);   // se
+        case 3: return across(rowIndex + 1, false);  // sw
+        case 4: return at(rowIndex, colIndex - 1);   // w
+        case 5: return across(rowIndex - 1, false);  // nw
+        default: return null;
+    }
+}
+
+/** Every neighbouring row/col pair, in side order. */
 export function neighbors(
     rows: readonly RowConfig[],
     rowIndex: number,
     colIndex: number
 ): Array<{ row: number; col: number }> {
-    const result: Array<{ row: number; col: number }> = [];
-    const row = rows[rowIndex];
-    if (!row) return result;
-
-    const push = (r: number, c: number, count: number) => {
-        if (c >= 0 && c < count) result.push({ row: r, col: c });
-    };
-
-    // A hex straddles two hexes in the row above and two in the row below. Which
-    // two depends on the sideways offset between the rows: when this row sits
-    // further right, it lines up with columns c and c+1; when it sits further
-    // left, with c-1 and c.
-    const touching = (other: RowConfig) => (row.offset > other.offset ? 0 : -1);
-
-    const prevRow = rows[rowIndex - 1];
-    if (rowIndex > 0 && prevRow) {
-        const shift = touching(prevRow);
-        push(rowIndex - 1, colIndex + shift, prevRow.count);
-        push(rowIndex - 1, colIndex + shift + 1, prevRow.count);
-    }
-
-    push(rowIndex, colIndex - 1, row.count);
-    push(rowIndex, colIndex + 1, row.count);
-
-    const nextRow = rows[rowIndex + 1];
-    if (nextRow) {
-        const shift = touching(nextRow);
-        push(rowIndex + 1, colIndex + shift, nextRow.count);
-        push(rowIndex + 1, colIndex + shift + 1, nextRow.count);
-    }
-
-    return result;
+    return HEX_SIDES.map((_, dir) => neighborAt(rows, rowIndex, colIndex, dir)).filter(
+        (n): n is { row: number; col: number } => n !== null
+    );
 }
 
 /** Centre point of a hex given its top-left bounding-box position. */
@@ -167,28 +184,88 @@ export function verticesAt(
     return hexVertices(center.x, center.y, metrics);
 }
 
+/** The two endpoints of one side of one hex. */
+export function sideEndpoints(
+    hex: Pick<Hex, 'x' | 'y'>,
+    side: HexSide | number,
+    metrics: HexMetrics
+): [Point, Point] {
+    const dir = typeof side === 'number' ? side : sideIndex(side);
+    const center = hexCenter(hex, metrics);
+    const vertices = hexVertices(center.x, center.y, metrics);
+    return [vertices[dir], vertices[(dir + 1) % 6]];
+}
+
+/** Rounds a point to a stable key so shared vertices compare equal. */
+function pointKey(point: Point): string {
+    return `${Math.round(point.x * 100)},${Math.round(point.y * 100)}`;
+}
+
 /**
- * Walks a `[row, col, vertex]` trace into a closed loop of pixel points.
- * Off-board steps are skipped with a warning rather than throwing, so a
- * half-finished coastline still renders while it is being authored.
+ * Traces the outline around a set of hexes.
+ *
+ * Any side that does not have another member of the set across it is a
+ * boundary side; chaining those sides end-to-end gives the coastline. Sides
+ * run clockwise around their own hex, so the resulting loops come out
+ * clockwise too.
+ *
+ * Returns one closed loop per landmass, so a scattered archipelago produces a
+ * separate outline around each island with no extra work.
  */
-export function traceOutline(
-    trace: ReadonlyArray<readonly [number, number, number]>,
+export function deriveCoastline(
     hexes: readonly Hex[],
     rows: readonly RowConfig[],
-    metrics: HexMetrics
-): Point[] {
-    const points: Point[] = [];
-    trace.forEach(([row, col, vertexIndex]) => {
-        const vertices = verticesAt(hexes, rows, row, col, metrics);
-        const point = vertices?.[vertexIndex];
-        if (!point) {
-            console.warn(`Skipping outline vertex at (${row}, ${col})[${vertexIndex}] — off board`);
-            return;
-        }
-        points.push(point);
+    metrics: HexMetrics,
+    isInside: (hex: Hex) => boolean
+): Point[][] {
+    const inside = new Set<number>();
+    hexes.forEach(hex => {
+        if (isInside(hex)) inside.add(hex.index);
     });
-    return points;
+
+    type Side = { from: Point; to: Point };
+    const sides: Side[] = [];
+    const startingAt = new Map<string, Side[]>();
+
+    hexes.forEach(hex => {
+        if (!inside.has(hex.index)) return;
+        HEX_SIDES.forEach((_, dir) => {
+            const neighbor = neighborAt(rows, hex.row, hex.col, dir);
+            const neighborIndex = neighbor ? rowColToIndex(rows, neighbor.row, neighbor.col) : -1;
+            if (neighborIndex >= 0 && inside.has(neighborIndex)) return;
+
+            const [from, to] = sideEndpoints(hex, dir, metrics);
+            const side = { from, to };
+            sides.push(side);
+
+            const key = pointKey(from);
+            const bucket = startingAt.get(key);
+            if (bucket) bucket.push(side);
+            else startingAt.set(key, [side]);
+        });
+    });
+
+    const used = new Set<Side>();
+    const loops: Point[][] = [];
+
+    sides.forEach(start => {
+        if (used.has(start)) return;
+
+        const loop: Point[] = [];
+        let current: Side | undefined = start;
+
+        while (current && !used.has(current)) {
+            used.add(current);
+            loop.push(current.from);
+            // Where two landmasses meet at a single vertex more than one side
+            // can continue; either choice still closes a valid loop.
+            current = startingAt.get(pointKey(current.to))?.find(side => !used.has(side));
+        }
+
+        if (loop.length >= 3) loops.push(loop);
+    });
+
+    return loops;
 }
 
 /** Midpoint and edge-aligned rotation for a boat sitting between two points. */

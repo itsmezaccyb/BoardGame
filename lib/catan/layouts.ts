@@ -1,6 +1,6 @@
 import { repeat } from './random';
 import { FALLBACK_LAND_TILE, WATER_TILE } from './tiles';
-import type { GenerationContext, PortAnchors, PortTypeId, TileTypeId } from './types';
+import type { GenerationContext, PortAnchor, PortTypeId, TileTypeId } from './types';
 
 /**
  * Reusable layout strategies.
@@ -115,7 +115,7 @@ export interface BoardTemplate {
     /** 1-based hex indices that are land. Everything else is sea. */
     land: number[];
     /** Where the ports sit for this arrangement. */
-    ports: Array<{ hexIndex: number; vertex1: number; vertex2: number }>;
+    ports: PortAnchor[];
 }
 
 export interface TemplateLayoutConfig {
@@ -156,15 +156,12 @@ export function pickTemplate<T>(templates: readonly T[], ctx: GenerationContext)
 
 /** Port anchors taken from the chosen template. */
 export function templatePortAnchors(templates: readonly BoardTemplate[]) {
-    return (ctx: GenerationContext): PortAnchors => ({
-        kind: 'hex-edge',
-        edges: pickTemplate(templates, ctx)?.ports ?? [],
-    });
+    return (ctx: GenerationContext): PortAnchor[] => pickTemplate(templates, ctx)?.ports ?? [];
 }
 
-/** Port anchors that ride along a traced coastline. */
-export function outlinePortAnchors(outlineId: string, pairs: Array<[number, number]>) {
-    return (): PortAnchors => ({ kind: 'outline', outlineId, pairs });
+/** A fixed set of port anchors, for boards whose harbours never move. */
+export function fixedPortAnchors(anchors: PortAnchor[]) {
+    return (): PortAnchor[] => anchors;
 }
 
 /** A fixed port bag, shuffled so the same harbours land in different places. */

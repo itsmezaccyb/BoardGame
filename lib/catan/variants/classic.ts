@@ -1,5 +1,5 @@
-import { RNG_OFFSET, outlinePortAnchors, shuffledLayout, shuffledPortPool } from '../layouts';
-import type { BoardVariant, OutlineSpec } from '../types';
+import { RNG_OFFSET, fixedPortAnchors, shuffledLayout, shuffledPortPool } from '../layouts';
+import type { BoardVariant, CoastlineSpec } from '../types';
 
 /**
  * Classic Catan — a single land mass with harbours around the rim.
@@ -10,62 +10,8 @@ const DISPLAY: BoardVariant['display'] = {
     barbarianTrack: { orientation: 'left', topOffset: '50%' },
 };
 
-/** Coastline of the 3-4-5-4-3 board, traced clockwise from the top-left hex. */
-const FOUR_PLAYER_OUTLINE: OutlineSpec = {
-    id: 'board',
-    weight: 'board',
-    trace: [
-        // Top edge, left to right.
-        [0, 0, 5], [0, 0, 0], [0, 0, 1],
-        [0, 1, 0], [0, 1, 1],
-        [0, 2, 0], [0, 2, 1], [0, 2, 2],
-        // Down the upper right.
-        [1, 3, 1], [1, 3, 2],
-        [2, 4, 1], [2, 4, 2], [2, 4, 3],
-        // Down the lower right.
-        [3, 3, 2], [3, 3, 3],
-        [4, 2, 2], [4, 2, 3],
-        // Bottom edge, right to left.
-        [4, 2, 4],
-        [4, 1, 3], [4, 1, 4],
-        [4, 0, 3], [4, 0, 4], [4, 0, 5],
-        // Up the left side.
-        [3, 0, 4], [3, 0, 5],
-        [2, 0, 4], [2, 0, 5], [2, 0, 0],
-        [1, 0, 5],
-        [0, 0, 4],
-    ],
-};
-
-/** Coastline of the wider 4-5-6-6-5-4 board. */
-const SIX_PLAYER_OUTLINE: OutlineSpec = {
-    id: 'board',
-    weight: 'board',
-    trace: [
-        // Top edge, left to right.
-        [0, 0, 5], [0, 0, 0], [0, 0, 1],
-        [0, 1, 0], [0, 1, 1],
-        [0, 2, 0], [0, 2, 1],
-        [0, 3, 0], [0, 3, 1], [0, 3, 2],
-        // Down the right side.
-        [1, 4, 1], [1, 4, 2],
-        [2, 5, 1], [2, 5, 2], [2, 5, 3],
-        [3, 5, 2], [3, 5, 3],
-        [4, 4, 2], [4, 4, 3],
-        [5, 3, 2], [5, 3, 3],
-        // Bottom edge, right to left.
-        [5, 3, 4],
-        [5, 2, 3], [5, 2, 4],
-        [5, 1, 3], [5, 1, 4],
-        [5, 0, 3], [5, 0, 4], [5, 0, 5],
-        // Up the left side.
-        [4, 0, 4], [4, 0, 5],
-        [3, 0, 4], [3, 0, 5], [3, 0, 0],
-        [2, 0, 5], [2, 0, 0],
-        [1, 0, 4], [1, 0, 5],
-        [0, 0, 4],
-    ],
-};
+/** The whole board is land, so the coastline is simply its rim. */
+const BOARD_COASTLINE: CoastlineSpec = { id: 'board', weight: 'board', region: 'land' };
 
 export const CLASSIC_FOUR_PLAYER: BoardVariant = {
     id: 'classic:base:4',
@@ -89,7 +35,7 @@ export const CLASSIC_FOUR_PLAYER: BoardVariant = {
         hill: 3,
         desert: 1,
     }),
-    outlines: [FOUR_PLAYER_OUTLINE],
+    coastlines: [BOARD_COASTLINE],
     ports: {
         pool: shuffledPortPool(
             [
@@ -105,9 +51,16 @@ export const CLASSIC_FOUR_PLAYER: BoardVariant = {
             ],
             RNG_OFFSET.classicPorts
         ),
-        anchors: outlinePortAnchors('board', [
-            [0, 1], [3, 4], [7, 8], [10, 11], [13, 14],
-            [17, 18], [20, 21], [23, 24], [27, 28],
+        anchors: fixedPortAnchors([
+            { hex: 1, side: 'nw' },
+            { hex: 2, side: 'ne' },
+            { hex: 7, side: 'ne' },
+            { hex: 12, side: 'e' },
+            { hex: 16, side: 'se' },
+            { hex: 18, side: 'se' },
+            { hex: 17, side: 'sw' },
+            { hex: 13, side: 'w' },
+            { hex: 4, side: 'w' },
         ]),
     },
     display: DISPLAY,
@@ -136,7 +89,7 @@ export const CLASSIC_SIX_PLAYER: BoardVariant = {
         hill: 5,
         desert: 2,
     }),
-    outlines: [SIX_PLAYER_OUTLINE],
+    coastlines: [BOARD_COASTLINE],
     ports: {
         pool: shuffledPortPool(
             [
@@ -154,9 +107,18 @@ export const CLASSIC_SIX_PLAYER: BoardVariant = {
             ],
             RNG_OFFSET.classicPorts
         ),
-        anchors: outlinePortAnchors('board', [
-            [2, 3], [7, 8], [10, 11], [14, 15], [19, 20], [22, 23],
-            [25, 26], [28, 29], [31, 32], [34, 35], [38, 0],
+        anchors: fixedPortAnchors([
+            { hex: 2, side: 'nw' },
+            { hex: 4, side: 'ne' },
+            { hex: 9, side: 'e' },
+            { hex: 21, side: 'e' },
+            { hex: 30, side: 'se' },
+            { hex: 29, side: 'sw' },
+            { hex: 27, side: 'se' },
+            { hex: 22, side: 'sw' },
+            { hex: 16, side: 'w' },
+            { hex: 10, side: 'nw' },
+            { hex: 1, side: 'w' },
         ]),
     },
     display: { ...DISPLAY, verticalOffsetRows: -0.5 },

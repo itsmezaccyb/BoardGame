@@ -23,7 +23,8 @@ const BLEED = 500;
  */
 export function BoardOutline({ outline, style, boardWidth, boardHeight }: BoardOutlineProps) {
     const layers = style.outlines[outline.weight];
-    if (!layers?.length || outline.points.length < 2) return null;
+    const loops = outline.loops.filter(loop => loop.length >= 2);
+    if (!layers?.length || loops.length === 0) return null;
 
     return (
         <svg
@@ -64,23 +65,18 @@ export function BoardOutline({ outline, style, boardWidth, boardHeight }: BoardO
                             : undefined
                     }
                 >
-                    {outline.points.map((point, pointIdx) => {
-                        const next = outline.points[(pointIdx + 1) % outline.points.length];
-                        return (
-                            <line
-                                key={pointIdx}
-                                x1={point.x}
-                                y1={point.y}
-                                x2={next.x}
-                                y2={next.y}
-                                stroke={layer.stroke}
-                                strokeWidth={layer.width}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                opacity={layer.opacity}
-                            />
-                        );
-                    })}
+                    {loops.map((loop, loopIdx) => (
+                        <polygon
+                            key={loopIdx}
+                            points={loop.map(p => `${p.x},${p.y}`).join(' ')}
+                            fill="none"
+                            stroke={layer.stroke}
+                            strokeWidth={layer.width}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            opacity={layer.opacity}
+                        />
+                    ))}
                 </g>
             ))}
         </svg>

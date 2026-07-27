@@ -88,8 +88,14 @@ export const MY_SCENARIO_4P: BoardVariant = {
 
     layout: islandLayout({ /* ... */ }),  // decides every hex's tile
 
-    outlines: [/* traced coastlines */],
-    ports: { pool: /* ... */, anchors: /* ... */ },
+    coastlines: [{ id: 'mainland', weight: 'island', region: 'land' }],
+    ports: {
+        pool: shuffledPortPool(['wood_2-1', 'generic_3-1', /* ... */], 1000),
+        anchors: fixedPortAnchors([
+            { hex: 4, side: 'nw' },
+            { hex: 11, side: 'e' },
+        ]),
+    },
     display: SEAFARERS_DISPLAY.wide,      // rotation, margins, artwork mode
 };
 ```
@@ -124,14 +130,50 @@ of the generator never disturb each other's results.
 
 ### Coastlines
 
-An outline is a closed loop of `[row, col, vertexIndex]` triples traced
-clockwise. Vertex indices run `0` = top, `1` = top-right, `2` = bottom-right,
-`3` = bottom, `4` = bottom-left, `5` = top-left. Off-board steps are skipped
-with a console warning rather than throwing, so a half-authored coastline still
-renders.
+You do not draw coastlines — you say which hexes they wrap, and the shape is
+derived by walking the sides that have no neighbour on the same side:
 
-Ports can then be anchored to pairs of point indices along that loop
-(`outlinePortAnchors`), or directly to a hex edge (`templatePortAnchors`).
+```ts
+coastlines: [
+    { id: 'board', weight: 'board', region: 'land' },        // every land hex
+    { id: 'mainland', weight: 'island', region: MAINLAND },  // one landmass
+]
+```
+
+`region` accepts:
+
+| Value                    | Meaning                                                   |
+| ------------------------ | --------------------------------------------------------- |
+| `'land'`                 | every non-water hex on the generated board                 |
+| `number[]`               | explicit 1-based hex indices — one landmass among several  |
+| `(ctx) => number[]`      | computed per game, for boards whose land varies            |
+
+Scattered land produces **one closed loop per island** automatically, so an
+archipelago outlines each island with no extra work.
+
+`weight` (`'board'` or `'island'`) selects which stroke stack the current tile
+style uses — see `styles.ts`.
+
+### Ports
+
+A port moors against **one side of one hex**:
+
+```ts
+anchors: fixedPortAnchors([
+    { hex: 12, side: 'e' },
+    { hex: 16, side: 'se' },
+])
+```
+
+Sides are named clockwise: `ne`, `e`, `se`, `sw`, `w`, `nw`. Anchors are
+independent of the coastline, so reshaping an island never moves its harbours.
+
+Use `templatePortAnchors` instead when the board picks between hand-authored
+arrangements — each template carries its own ports, so the two stay in step.
+
+To find the side you want, note that hexes are numbered in reading order
+starting at 1 (row 0 left to right, then row 1, ...), and `side` is the
+direction the boat faces away from that hex.
 
 ---
 

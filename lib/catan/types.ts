@@ -15,6 +15,22 @@ export type PortTypeId = string;
 /** Id of a visual style registered in `styles.ts` (e.g. 'classic', 'simple'). */
 export type TileStyleId = string;
 
+/**
+ * The six sides of a hex, named by compass direction and listed clockwise.
+ *
+ * A side's position in this list is also the index of the vertex it starts
+ * at, so side `n` runs from vertex `n` to vertex `n + 1`:
+ *
+ *            nw ___ ne
+ *              /   \
+ *           w |     | e
+ *              \___/
+ *            sw     se
+ */
+export const HEX_SIDES = ['ne', 'e', 'se', 'sw', 'w', 'nw'] as const;
+
+export type HexSide = (typeof HEX_SIDES)[number];
+
 /** Id of an expansion registered in `variants/index.ts` (e.g. 'classic', 'seafarers'). */
 export type ExpansionId = string;
 
@@ -75,43 +91,45 @@ export interface PortPlacement {
  */
 export type OutlineWeight = 'board' | 'island';
 
-/** A traced coastline: a closed loop of hex vertices. */
-export interface OutlineSpec {
+/**
+ * Which hexes a coastline wraps.
+ *
+ * `'land'` follows every non-water hex, which is usually what you want.
+ * An explicit list of 1-based hex indices picks out one landmass — a mainland,
+ * say, when the same board also has small islands you do not want outlined.
+ * A function computes the list per game, for boards whose land varies.
+ */
+export type CoastlineRegion = 'land' | number[] | ((ctx: GenerationContext) => number[]);
+
+/**
+ * A coastline to draw. The shape is derived from the hexes themselves, so
+ * there is nothing to trace by hand.
+ */
+export interface CoastlineSpec {
     id: string;
     weight: OutlineWeight;
-    /**
-     * Closed loop of `[row, col, vertexIndex]` triples. Vertex indices are
-     * 0 = top, 1 = top-right, 2 = bottom-right, 3 = bottom, 4 = bottom-left,
-     * 5 = top-left.
-     */
-    trace: Array<[number, number, number]>;
+    region: CoastlineRegion;
 }
 
-/** An outline after its vertices have been resolved to pixel coordinates. */
+/** A coastline resolved to pixels — one closed loop per landmass. */
 export interface RenderedOutline {
     id: string;
     weight: OutlineWeight;
-    points: Point[];
+    loops: Point[][];
 }
 
-/** Where a port sits: either along a traced outline, or on a specific hex edge. */
-export type PortAnchors =
-    | {
-        kind: 'outline';
-        /** Which `OutlineSpec.id` the pairs index into. */
-        outlineId: string;
-        /** Pairs of outline point indices; the boat sits on the midpoint. */
-        pairs: Array<[number, number]>;
-    }
-    | {
-        kind: 'hex-edge';
-        edges: Array<{
-            /** 1-based hex index in reading order. */
-            hexIndex: number;
-            vertex1: number;
-            vertex2: number;
-        }>;
-    };
+/**
+ * Where a port boat moors: against one side of one hex.
+ *
+ * Sides are named by compass direction — `'ne' | 'e' | 'se' | 'sw' | 'w' | 'nw'`
+ * — so an anchor reads as "the north-west side of hex 12" and stays correct no
+ * matter how the coastline around it changes.
+ */
+export interface PortAnchor {
+    /** 1-based hex index in board reading order. */
+    hex: number;
+    side: HexSide;
+}
 
 /** Everything a layout/port function is handed while a board is generated. */
 export interface GenerationContext {
@@ -188,12 +206,13 @@ export interface BoardVariant {
     numberDistribution: Record<number, number>;
     /** Decides the tile type of every hex, in board reading order. */
     layout: (ctx: GenerationContext) => TileTypeId[];
-    outlines?: OutlineSpec[];
+    /** Coastlines to draw around the finished board. */
+    coastlines?: CoastlineSpec[];
     ports?: {
         /** The bag of port types to deal out, already in deal order. */
         pool: (ctx: GenerationContext) => PortTypeId[];
-        /** Where those ports go. */
-        anchors: (ctx: GenerationContext) => PortAnchors;
+        /** Which hex sides those ports moor against. */
+        anchors: (ctx: GenerationContext) => PortAnchor[];
     };
     display?: VariantDisplay;
 }

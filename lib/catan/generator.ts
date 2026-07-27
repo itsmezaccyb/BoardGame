@@ -1,26 +1,24 @@
 import {
     buildGrid,
+    deriveCoastline,
     edgeAnchor,
-    hexCenter,
-    hexVertices,
     indexToRowCol,
     neighbors,
     rowColToIndex,
+    sideEndpoints,
     totalHexCount,
-    traceOutline,
 } from './hex-geometry';
 import { assignNumbers } from './numbers';
 import { createRng } from './random';
-import { WATER_TILE } from './tiles';
+import { isWater, WATER_TILE } from './tiles';
 import type {
     BoardVariant,
+    CoastlineRegion,
     GeneratedBoard,
     GenerationContext,
     Hex,
     HexMetrics,
-    PortAnchors,
     PortPlacement,
-    Point,
     RenderedOutline,
     RowConfig,
 } from './types';
@@ -56,13 +54,13 @@ export function generateBoard(
 
     assignNumbers(hexes, rows, variant.numberDistribution, rng);
 
-    const outlines: RenderedOutline[] = (variant.outlines ?? []).map(spec => ({
+    const outlines: RenderedOutline[] = (variant.coastlines ?? []).map(spec => ({
         id: spec.id,
         weight: spec.weight,
-        points: traceOutline(spec.trace, hexes, rows, metrics),
+        loops: deriveCoastline(hexes, rows, metrics, insideRegion(spec.region, ctx)),
     }));
 
-    const ports = placePorts(variant, ctx, hexes, outlines);
+    const ports = placePorts(variant, ctx, hexes);
 
     return {
         variant,
@@ -77,66 +75,49 @@ export function generateBoard(
     };
 }
 
+/** Turns a coastline region into a membership test over the generated hexes. */
+function insideRegion(
+    region: CoastlineRegion,
+    ctx: GenerationContext
+): (hex: Hex) => boolean {
+    if (region === 'land') return hex => !isWater(hex.tileType);
+
+    const indices = new Set(typeof region === 'function' ? region(ctx) : region);
+    return hex => indices.has(hex.index + 1);
+}
+
 function placePorts(
     variant: BoardVariant,
     ctx: GenerationContext,
-    hexes: Hex[],
-    outlines: RenderedOutline[]
+    hexes: Hex[]
 ): PortPlacement[] {
     if (!variant.ports) return [];
 
     const pool = variant.ports.pool(ctx);
     const anchors = variant.ports.anchors(ctx);
-    const edges = resolveAnchorEdges(anchors, ctx, hexes, outlines);
 
-    const placements: PortPlacement[] = [];
-    edges.forEach((edge, idx) => {
-        const portType = pool[idx];
-        if (!edge || !portType) return;
-        placements.push({ portType, ...edgeAnchor(edge[0], edge[1]) });
-    });
-
-    if (edges.length > pool.length) {
+    if (anchors.length > pool.length) {
         console.warn(
-            `${variant.id}: ${edges.length} port anchors but only ${pool.length} port types`
+            `${variant.id}: ${anchors.length} port anchors but only ${pool.length} port types`
         );
     }
 
-    return placements;
-}
+    const placements: PortPlacement[] = [];
+    anchors.forEach((anchor, idx) => {
+        const portType = pool[idx];
+        if (!portType) return;
 
-/** Resolves each anchor into the two points its boat should straddle. */
-function resolveAnchorEdges(
-    anchors: PortAnchors,
-    ctx: GenerationContext,
-    hexes: Hex[],
-    outlines: RenderedOutline[]
-): Array<[Point, Point] | null> {
-    if (anchors.kind === 'outline') {
-        const outline = outlines.find(o => o.id === anchors.outlineId);
-        if (!outline) {
-            console.warn(`Port anchors reference unknown outline "${anchors.outlineId}"`);
-            return [];
-        }
-        return anchors.pairs.map(([a, b]) => {
-            const p1 = outline.points[a];
-            const p2 = outline.points[b];
-            return p1 && p2 ? [p1, p2] : null;
-        });
-    }
-
-    return anchors.edges.map(edge => {
-        const hex = hexes[edge.hexIndex - 1];
+        const hex = hexes[anchor.hex - 1];
         if (!hex) {
-            console.warn(`Port anchored to missing hex ${edge.hexIndex}`);
-            return null;
+            console.warn(`${variant.id}: port anchored to hex ${anchor.hex}, which is off board`);
+            return;
         }
-        const center = hexCenter(hex, ctx.metrics);
-        const vertices = hexVertices(center.x, center.y, ctx.metrics);
-        const p1 = vertices[edge.vertex1];
-        const p2 = vertices[edge.vertex2];
-        return p1 && p2 ? [p1, p2] : null;
+
+        const [p1, p2] = sideEndpoints(hex, anchor.side, ctx.metrics);
+        placements.push({ portType, ...edgeAnchor(p1, p2) });
     });
+
+    return placements;
 }
 
 /**

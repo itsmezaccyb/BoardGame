@@ -113,6 +113,32 @@ export const SCENARIOS = [
 The scenario dropdown and the player-count buttons are built from the registry,
 so the new mode shows up in the settings panel with no UI changes.
 
+### Custom boards
+
+`custom.ts` builds a `BoardVariant` from a plain, serialisable config, so a
+player-built board runs through exactly the same generator, renderer and
+coastline code as the built-in ones:
+
+```ts
+buildCustomVariant({
+    sizeIndex: 2,                                  // index into BOARD_SIZES
+    tileCounts: { forest: 6, pasture: 5, ... },    // the bag to shuffle in
+    locked: { 12: 'water', 13: 'water' },          // hexes pinned by hand
+    ports: [{ hex: 4, side: 'nw', portType: 'wood_2-1' }],
+})
+```
+
+`BOARD_SIZES` are regular hexagons by radius. Any other outline comes from
+pinning hexes to `water` and letting the derived coastline follow the result —
+which is why there is no row editor.
+
+Number tokens are sized to the board: `buildNumberDistribution(n)` spreads `n`
+tokens across 2-12 in classic proportions using largest-remainder allocation,
+so the totals always add up whatever the board size.
+
+`autoPlacePorts()` spreads harbours evenly around the longest coastline; after
+that they are ordinary anchors the player can add or remove one at a time.
+
 ### Layout strategies
 
 `layouts.ts` has three ready-made ones:

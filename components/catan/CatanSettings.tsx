@@ -16,6 +16,8 @@ interface CatanSettingsProps {
     citiesAndKnights: boolean;
     onCitiesAndKnightsChange: (enabled: boolean) => void;
     onRandomize: () => void;
+    /** Rendered in place of the player-count buttons, for the custom board. */
+    children?: React.ReactNode;
 }
 
 /**
@@ -35,6 +37,7 @@ export function CatanSettings({
     citiesAndKnights,
     onCitiesAndKnightsChange,
     onRandomize,
+    children,
 }: CatanSettingsProps) {
     const scenarios = listScenarios(expansion);
     const variants = listVariants(expansion, scenario);
@@ -98,19 +101,20 @@ export function CatanSettings({
                 </div>
             )}
 
-            {variants.map((variant) => (
-                <button
-                    key={variant.id}
-                    onClick={() => onPlayerCountChange(variant.playerCount)}
-                    className={`w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors text-left ${
-                        playerCount === variant.playerCount
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
-                    }`}
-                >
-                    {variant.label}
-                </button>
-            ))}
+            {children ??
+                variants.map((variant) => (
+                    <button
+                        key={variant.id}
+                        onClick={() => onPlayerCountChange(variant.playerCount)}
+                        className={`w-full px-6 py-3 rounded-lg font-semibold text-lg transition-colors text-left ${
+                            playerCount === variant.playerCount
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+                        }`}
+                    >
+                        {variant.label}
+                    </button>
+                ))}
         </>
     );
 }

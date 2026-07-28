@@ -201,62 +201,71 @@ function pointKey(point: Point): string {
     return `${Math.round(point.x * 100)},${Math.round(point.y * 100)}`;
 }
 
+/** One hex side lying on a coastline, with the pixels it spans. */
+export interface CoastSide {
+    /** 1-based hex index, matching how ports are anchored. */
+    hex: number;
+    side: HexSide;
+    from: Point;
+    to: Point;
+}
+
 /**
- * Traces the outline around a set of hexes.
+ * Traces the coast around a set of hexes, as runs of hex sides.
  *
  * Any side that does not have another member of the set across it is a
- * boundary side; chaining those sides end-to-end gives the coastline. Sides
- * run clockwise around their own hex, so the resulting loops come out
- * clockwise too.
+ * boundary side; chaining those sides end-to-end gives the coast. Sides run
+ * clockwise around their own hex, so the resulting loops come out clockwise
+ * too.
  *
  * Returns one closed loop per landmass, so a scattered archipelago produces a
- * separate outline around each island with no extra work.
+ * separate loop per island with no extra work. Keeping the hex and side on
+ * each entry is what lets ports snap to the coast.
  */
-export function deriveCoastline(
+export function deriveCoastSides(
     hexes: readonly Hex[],
     rows: readonly RowConfig[],
     metrics: HexMetrics,
     isInside: (hex: Hex) => boolean
-): Point[][] {
+): CoastSide[][] {
     const inside = new Set<number>();
     hexes.forEach(hex => {
         if (isInside(hex)) inside.add(hex.index);
     });
 
-    type Side = { from: Point; to: Point };
-    const sides: Side[] = [];
-    const startingAt = new Map<string, Side[]>();
+    const sides: CoastSide[] = [];
+    const startingAt = new Map<string, CoastSide[]>();
 
     hexes.forEach(hex => {
         if (!inside.has(hex.index)) return;
-        HEX_SIDES.forEach((_, dir) => {
+        HEX_SIDES.forEach((name, dir) => {
             const neighbor = neighborAt(rows, hex.row, hex.col, dir);
             const neighborIndex = neighbor ? rowColToIndex(rows, neighbor.row, neighbor.col) : -1;
             if (neighborIndex >= 0 && inside.has(neighborIndex)) return;
 
             const [from, to] = sideEndpoints(hex, dir, metrics);
-            const side = { from, to };
-            sides.push(side);
+            const entry: CoastSide = { hex: hex.index + 1, side: name, from, to };
+            sides.push(entry);
 
             const key = pointKey(from);
             const bucket = startingAt.get(key);
-            if (bucket) bucket.push(side);
-            else startingAt.set(key, [side]);
+            if (bucket) bucket.push(entry);
+            else startingAt.set(key, [entry]);
         });
     });
 
-    const used = new Set<Side>();
-    const loops: Point[][] = [];
+    const used = new Set<CoastSide>();
+    const loops: CoastSide[][] = [];
 
     sides.forEach(start => {
         if (used.has(start)) return;
 
-        const loop: Point[] = [];
-        let current: Side | undefined = start;
+        const loop: CoastSide[] = [];
+        let current: CoastSide | undefined = start;
 
         while (current && !used.has(current)) {
             used.add(current);
-            loop.push(current.from);
+            loop.push(current);
             // Where two landmasses meet at a single vertex more than one side
             // can continue; either choice still closes a valid loop.
             current = startingAt.get(pointKey(current.to))?.find(side => !used.has(side));
@@ -266,6 +275,18 @@ export function deriveCoastline(
     });
 
     return loops;
+}
+
+/** The same coast as closed loops of pixel points, for drawing. */
+export function deriveCoastline(
+    hexes: readonly Hex[],
+    rows: readonly RowConfig[],
+    metrics: HexMetrics,
+    isInside: (hex: Hex) => boolean
+): Point[][] {
+    return deriveCoastSides(hexes, rows, metrics, isInside).map(loop =>
+        loop.map(side => side.from)
+    );
 }
 
 /** Midpoint and edge-aligned rotation for a boat sitting between two points. */

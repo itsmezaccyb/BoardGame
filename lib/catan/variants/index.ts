@@ -1,3 +1,4 @@
+import { CUSTOM_EXPANSION, CUSTOM_VARIANT_TEMPLATE } from '../custom';
 import type { BoardVariant, ExpansionId, PlayerCount, ScenarioId } from '../types';
 import { CLASSIC_VARIANTS } from './classic';
 import { FOUR_ISLANDS_VARIANTS } from './seafarers-four-islands';
@@ -33,6 +34,7 @@ export interface ScenarioDef {
 export const EXPANSIONS: ExpansionDef[] = [
     { id: 'classic', label: 'Classic' },
     { id: 'seafarers', label: 'Seafarers' },
+    { id: CUSTOM_EXPANSION, label: 'Custom Board' },
 ];
 
 export const SCENARIOS: ScenarioDef[] = [
@@ -44,6 +46,9 @@ export const BOARD_VARIANTS: BoardVariant[] = [
     ...CLASSIC_VARIANTS,
     ...NEW_SHORES_VARIANTS,
     ...FOUR_ISLANDS_VARIANTS,
+    // A stand-in so the mode is listed; the page swaps in a variant built from
+    // the player's own settings (see `lib/catan/custom.ts`).
+    CUSTOM_VARIANT_TEMPLATE,
 ];
 
 export const DEFAULT_EXPANSION: ExpansionId = 'classic';

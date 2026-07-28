@@ -69,6 +69,14 @@ export interface CustomBoardConfig {
     sizeIndex: number;
     /** How many of each tile type to shuffle into the unlocked hexes. */
     tileCounts: Record<TileTypeId, number>;
+    /**
+     * The mix resizing scales from, set whenever the counts are edited by hand.
+     *
+     * Resizing from the current counts would compound its own rounding — a trip
+     * down to the 7-hex board and back leaves the proportions visibly skewed —
+     * so every resize derives from this fixed reference instead.
+     */
+    tileRatio?: Record<TileTypeId, number>;
     /** Hexes pinned to a tile type, keyed by 1-based hex index. */
     locked: Record<number, TileTypeId>;
     /** Harbours, auto-placed to begin with and then editable by hand. */
@@ -85,11 +93,34 @@ export const DEFAULT_CUSTOM_CONFIG: CustomBoardConfig = {
 
 /** Fills in anything missing, so older saved boards keep working. */
 export function normalizeConfig(config: Partial<CustomBoardConfig> | null): CustomBoardConfig {
-    return {
-        sizeIndex: config?.sizeIndex ?? DEFAULT_CUSTOM_CONFIG.sizeIndex,
+    const sizeIndex = config?.sizeIndex ?? DEFAULT_CUSTOM_CONFIG.sizeIndex;
+    return pruneToBoard({
+        sizeIndex,
         tileCounts: { ...config?.tileCounts },
+        tileRatio: config?.tileRatio ? { ...config.tileRatio } : undefined,
         locked: { ...config?.locked },
         ports: Array.isArray(config?.ports) ? config!.ports : [],
+    });
+}
+
+/**
+ * Drops pins and harbours that fall outside the board.
+ *
+ * Shrinking the board leaves references to hexes that no longer exist; without
+ * this they linger invisibly and are counted against the free-hex total.
+ */
+export function pruneToBoard(config: CustomBoardConfig): CustomBoardConfig {
+    const { hexCount } = boardSize(config.sizeIndex);
+
+    const locked: Record<number, TileTypeId> = {};
+    Object.entries(config.locked).forEach(([hex, tile]) => {
+        if (Number(hex) >= 1 && Number(hex) <= hexCount) locked[Number(hex)] = tile;
+    });
+
+    return {
+        ...config,
+        locked,
+        ports: config.ports.filter(port => port.hex >= 1 && port.hex <= hexCount),
     };
 }
 
@@ -259,25 +290,97 @@ export function buildCustomVariant(config: CustomBoardConfig): BoardVariant {
 /** A board built from the defaults, used to register the mode in the UI. */
 export const CUSTOM_VARIANT_TEMPLATE = buildCustomVariant(DEFAULT_CUSTOM_CONFIG);
 
-/** Handy when seeding a fresh board: an even spread across the land tiles. */
-export function suggestTileCounts(hexCount: number): Record<TileTypeId, number> {
-    const base = DEFAULT_CUSTOM_CONFIG.tileCounts;
-    const baseTotal = Object.values(base).reduce((sum, n) => sum + n, 0);
-    const scale = hexCount / baseTotal;
+/**
+ * Rescales a tile mix to fill `target` hexes, keeping the proportions.
+ *
+ * Uses largest-remainder allocation so the counts always add up to exactly the
+ * target rather than drifting a tile or two out under rounding.
+ */
+export function scaleTileCounts(
+    counts: Record<TileTypeId, number>,
+    target: number
+): Record<TileTypeId, number> {
+    // An empty mix has no proportions to preserve, so fall back to the classic one.
+    const source = Object.values(counts).some(n => n > 0) ? counts : DEFAULT_CUSTOM_CONFIG.tileCounts;
+    const entries = Object.entries(source).filter(([, n]) => n > 0) as Array<[TileTypeId, number]>;
+    const total = entries.reduce((sum, [, n]) => sum + n, 0);
 
-    const counts: Record<TileTypeId, number> = {};
+    if (target <= 0 || total === 0 || entries.length === 0) return {};
+
+    const scale = target / total;
+    const exact = entries.map(([id, n]) => ({ id, value: n * scale }));
+
+    const scaled: Record<TileTypeId, number> = {};
     let assigned = 0;
-    Object.entries(base).forEach(([id, n]) => {
-        counts[id] = Math.max(0, Math.floor(n * scale));
-        assigned += counts[id];
+    exact.forEach(({ id, value }) => {
+        scaled[id] = Math.floor(value);
+        assigned += scaled[id];
     });
 
-    // Top up with the staple resources until the board is full.
-    const staples: TileTypeId[] = ['forest', 'pasture', 'field', 'mountain', 'hill'];
-    for (let i = 0; assigned < hexCount; i++, assigned++) {
-        counts[staples[i % staples.length]] += 1;
+    const byRemainder = [...exact].sort(
+        (a, b) => (b.value % 1) - (a.value % 1) || b.value - a.value
+    );
+    for (let i = 0; assigned < target; i = (i + 1) % byRemainder.length) {
+        scaled[byRemainder[i].id] += 1;
+        assigned += 1;
     }
 
-    return counts;
+    // Scaling down hard can round a tile type away completely, and once it is
+    // gone it never comes back when the board grows again. As long as the
+    // board has room for one of everything, keep every type present by taking
+    // a tile from whichever type has the most.
+    if (entries.length <= target) {
+        const missing = () => exact.find(({ id }) => scaled[id] === 0);
+        for (let entry = missing(); entry; entry = missing()) {
+            const donor = exact
+                .map(({ id }) => id)
+                .reduce((most, id) => (scaled[id] > scaled[most] ? id : most));
+            if (scaled[donor] <= 1) break;
+            scaled[donor] -= 1;
+            scaled[entry.id] += 1;
+        }
+    }
+
+    Object.keys(scaled).forEach(id => {
+        if (scaled[id] === 0) delete scaled[id];
+    });
+
+    return scaled;
+}
+
+/**
+ * Switches to a different board size, bringing the tile mix with it.
+ *
+ * The proportions the player chose are kept; only the totals move, so a board
+ * that was mostly forest stays mostly forest at any size. Pins and harbours
+ * that fall off a smaller board are dropped.
+ */
+export function resizeBoard(config: CustomBoardConfig, sizeIndex: number): CustomBoardConfig {
+    const pruned = pruneToBoard({ ...config, sizeIndex });
+    const free = boardSize(sizeIndex).hexCount - Object.keys(pruned.locked).length;
+    // Pinned down on the first resize, so repeated slides all derive from the
+    // same reference rather than from each other.
+    const ratio = config.tileRatio ?? config.tileCounts;
+
+    return { ...pruned, tileRatio: ratio, tileCounts: scaleTileCounts(ratio, free) };
+}
+
+/** Refills the board with the current mix — used after pinning changes the free count. */
+export function refitTiles(config: CustomBoardConfig, free: number): CustomBoardConfig {
+    return {
+        ...config,
+        tileCounts: scaleTileCounts(config.tileRatio ?? config.tileCounts, free),
+    };
+}
+
+/** Records a hand-edited mix as the new reference for future resizing. */
+export function setTileCount(
+    config: CustomBoardConfig,
+    tile: TileTypeId,
+    value: number
+): CustomBoardConfig {
+    const tileCounts = { ...config.tileCounts, [tile]: Math.max(0, value) };
+    if (tileCounts[tile] === 0) delete tileCounts[tile];
+    return { ...config, tileCounts, tileRatio: tileCounts };
 }
 

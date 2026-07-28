@@ -5,6 +5,9 @@ import {
     BOARD_SIZES,
     boardSize,
     placedTileCount,
+    refitTiles,
+    resizeBoard,
+    setTileCount,
     unlockedHexCount,
     type CustomBoardConfig,
 } from '@/lib/catan/custom';
@@ -52,11 +55,8 @@ export function CustomBoardEditor({
     const placed = placedTileCount(config);
     const spare = open - placed;
 
-    const setCount = (tile: TileTypeId, value: number) => {
-        const tileCounts = { ...config.tileCounts, [tile]: Math.max(0, value) };
-        if (tileCounts[tile] === 0) delete tileCounts[tile];
-        onChange({ ...config, tileCounts });
-    };
+    const setCount = (tile: TileTypeId, value: number) =>
+        onChange(setTileCount(config, tile, value));
 
     return (
         <div className="flex flex-col gap-3">
@@ -70,7 +70,9 @@ export function CustomBoardEditor({
                     min={0}
                     max={BOARD_SIZES.length - 1}
                     value={config.sizeIndex}
-                    onChange={e => onChange({ ...config, sizeIndex: Number(e.target.value) })}
+                    // Resizing carries the tile mix with it, so the new board
+                    // arrives full rather than mostly sea.
+                    onChange={e => onChange(resizeBoard(config, Number(e.target.value)))}
                     className="w-full"
                 />
                 <div className="text-xs text-gray-500">
@@ -80,16 +82,29 @@ export function CustomBoardEditor({
 
             {/* ---- tile mix ---- */}
             <div className="flex flex-col gap-1">
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline justify-between gap-2">
                     <label className="text-sm font-medium text-gray-700">Tiles</label>
                     <span
-                        className={`text-xs ${spare < 0 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}
+                        className={`text-xs text-right ${
+                            spare < 0 ? 'text-red-600 font-semibold' : 'text-gray-500'
+                        }`}
                     >
                         {spare < 0
                             ? `${-spare} too many for ${open} free hexes`
                             : `${spare} free ${spare === 1 ? 'hex' : 'hexes'} left as sea`}
                     </span>
                 </div>
+
+                {/* Pinning hexes changes how many are free, so offer a one-click
+                    re-fit without having to nudge the size slider. */}
+                {spare !== 0 && (
+                    <button
+                        onClick={() => onChange(refitTiles(config, open))}
+                        className="self-start px-2 py-1 rounded text-xs font-semibold bg-gray-200 text-gray-900 hover:bg-gray-300"
+                    >
+                        Fit tiles to board
+                    </button>
+                )}
 
                 {LAND_TILES.map(tile => (
                     <div key={tile.id} className="flex items-center gap-2">

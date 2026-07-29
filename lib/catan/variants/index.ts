@@ -3,6 +3,7 @@ import type { BoardVariant, ExpansionId, PlayerCount, ScenarioId } from '../type
 import { CLASSIC_VARIANTS } from './classic';
 import { FOUR_ISLANDS_VARIANTS } from './seafarers-four-islands';
 import { NEW_SHORES_VARIANTS } from './seafarers-new-shores';
+import { SCENARIO_LABELS, SCENARIO_VARIANTS } from './seafarers-scenarios';
 
 /**
  * Variant registry — the single list of playable boards.
@@ -39,13 +40,16 @@ export const EXPANSIONS: ExpansionDef[] = [
 
 export const SCENARIOS: ScenarioDef[] = [
     { id: 'heading-for-new-shores', expansion: 'seafarers', label: 'Heading for New Shores' },
-    { id: '4-islands', expansion: 'seafarers', label: '4 Islands' },
+    { id: '4-islands', expansion: 'seafarers', label: 'The Four Islands' },
+    // The remaining rulebook scenarios, in their published order.
+    ...SCENARIO_LABELS.map(({ id, label }) => ({ id, expansion: 'seafarers', label })),
 ];
 
 export const BOARD_VARIANTS: BoardVariant[] = [
     ...CLASSIC_VARIANTS,
     ...NEW_SHORES_VARIANTS,
     ...FOUR_ISLANDS_VARIANTS,
+    ...SCENARIO_VARIANTS,
     // A stand-in so the mode is listed; the page swaps in a variant built from
     // the player's own settings (see `lib/catan/custom.ts`).
     CUSTOM_VARIANT_TEMPLATE,
@@ -104,3 +108,4 @@ export * from './classic';
 export * from './seafarers-common';
 export * from './seafarers-four-islands';
 export * from './seafarers-new-shores';
+export * from './seafarers-scenarios';

@@ -139,6 +139,14 @@ export interface GenerationContext {
     hexCount: number;
     metrics: HexMetrics;
     rng: SeededRng;
+    /**
+     * The board's hexes.
+     *
+     * Positions are final from the start; tile types are filled in by the
+     * layout, so this is only meaningful to code that runs afterwards — port
+     * placement, which needs to know where the coast ended up.
+     */
+    hexes: Hex[];
 }
 
 /** Deterministic random source; see `random.ts`. */

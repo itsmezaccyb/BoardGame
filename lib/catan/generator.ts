@@ -37,15 +37,18 @@ export function generateBoard(
     const rows = variant.rows;
     const rng = createRng(seed);
 
+    // The grid comes first so port placement can see where the coast ends up;
+    // the layout fills in the tile types below.
+    const hexes = buildGrid(rows, metrics, variant.display?.verticalOffsetRows ?? 0);
+
     const ctx: GenerationContext = {
         variant,
         rows,
         hexCount: totalHexCount(rows),
         metrics,
         rng,
+        hexes,
     };
-
-    const hexes = buildGrid(rows, metrics, variant.display?.verticalOffsetRows ?? 0);
 
     const tileIds = variant.layout(ctx);
     hexes.forEach(hex => {

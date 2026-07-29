@@ -1,5 +1,6 @@
 import { deriveCoastSides, totalHexCount } from './hex-geometry';
 import { RNG_OFFSET } from './layouts';
+import { buildNumberDistribution } from './numbers';
 import { repeat } from './random';
 import { isWater, takesNumberToken, WATER_TILE } from './tiles';
 import type {
@@ -164,44 +165,6 @@ export function placedTileCount(config: CustomBoardConfig): number {
 }
 
 // --------------------------------------------------------------------------
-// Number tokens
-// --------------------------------------------------------------------------
-
-const NUMBER_VALUES = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12];
-/** Classic Catan proportions: the extremes appear half as often. */
-const NUMBER_WEIGHTS = [1, 2, 2, 2, 2, 2, 2, 2, 2, 1];
-
-/**
- * Spreads `count` number tokens across 2-12 in classic proportions.
- *
- * Uses largest-remainder allocation so the totals always add up exactly,
- * whatever the board size.
- */
-export function buildNumberDistribution(count: number): Record<number, number> {
-    const total = NUMBER_WEIGHTS.reduce((sum, w) => sum + w, 0);
-    const exact = NUMBER_WEIGHTS.map(weight => (count * weight) / total);
-    const allocation = exact.map(Math.floor);
-
-    let remaining = count - allocation.reduce((sum, n) => sum + n, 0);
-    // Hand out the leftovers to whichever numbers were rounded down hardest,
-    // preferring the middle of the range so 6s and 8s stay placeable.
-    const order = exact
-        .map((value, index) => ({ index, remainder: value - Math.floor(value) }))
-        .sort((a, b) => b.remainder - a.remainder || Math.abs(4.5 - a.index) - Math.abs(4.5 - b.index));
-
-    for (let i = 0; remaining > 0; i = (i + 1) % order.length) {
-        allocation[order[i].index] += 1;
-        remaining -= 1;
-    }
-
-    const distribution: Record<number, number> = {};
-    NUMBER_VALUES.forEach((value, index) => {
-        if (allocation[index] > 0) distribution[value] = allocation[index];
-    });
-    return distribution;
-}
-
-// --------------------------------------------------------------------------
 // Ports
 // --------------------------------------------------------------------------
 
@@ -253,6 +216,9 @@ export function suggestedPortCount(coastLength: number): number {
 // --------------------------------------------------------------------------
 // Variant
 // --------------------------------------------------------------------------
+
+// Re-exported so callers that reach for it via this module keep working.
+export { buildNumberDistribution };
 
 export const CUSTOM_EXPANSION = 'custom';
 export const CUSTOM_VARIANT_ID = 'custom:board';

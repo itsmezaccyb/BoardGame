@@ -145,13 +145,35 @@ that they are ordinary anchors the player can add or remove one at a time.
 
 ### Layout strategies
 
-`layouts.ts` has three ready-made ones:
+`layouts.ts` has four ready-made ones:
 
 | Strategy          | Use when                                                        |
 | ----------------- | --------------------------------------------------------------- |
+| `mapLayout`       | **easiest** — draw the board as text (all rulebook scenarios)    |
 | `shuffledLayout`  | one land mass, one bag of tiles shuffled across it (classic)     |
 | `islandLayout`    | a mainland plus small islands in open sea (Heading for New Shores) |
 | `templateLayout`  | several hand-authored island arrangements, one picked per game (4 Islands) |
+
+`mapLayout` is the quickest way to add a scenario — you draw it:
+
+```ts
+map: [
+    '~...~',
+    '~....~',
+    '~~???~~',      // ~ sea   ? fog   . random tile from the pool
+    '~??????~',     // F P W M H  fixed forest/pasture/field/mountain/hill
+    '~?????~',      // G gold    D desert
+    '~....~',
+    '~...~',
+],
+pool: { forest: 3, pasture: 3, field: 3, mountain: 3, hill: 2 },
+```
+
+Row widths must match the board's rows; a mismatch warns in the console rather
+than failing, so a half-edited map still renders. See
+`variants/seafarers-scenarios.ts`, where each of the seven rulebook scenarios
+is a map plus a pool and nothing else — number tokens are counted from the map
+and harbours place themselves around the resulting coast.
 
 A layout is just `(ctx) => TileTypeId[]` — one tile id per hex in reading order
 — so you can write your own if none of these fit. `ctx.rng` gives you

@@ -104,6 +104,19 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             simple: '/images/catan_desert_style.jpg',
         },
     },
+    fog: {
+        id: 'fog',
+        label: 'Fog',
+        // Counted as land so it takes a tile border and sits inside the
+        // coastline — a face-down hex is a placed tile, not open sea.
+        category: 'land',
+        // Face-down hexes hide their number until they are revealed in play.
+        producesResource: false,
+        images: {
+            classic: '/images/catan_fog.png',
+            simple: '/images/catan_fog_style.png',
+        },
+    },
     water: {
         id: 'water',
         label: 'Sea',

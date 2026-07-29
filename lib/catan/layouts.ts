@@ -1,5 +1,6 @@
+import { deriveCoastSides } from './hex-geometry';
 import { repeat } from './random';
-import { FALLBACK_LAND_TILE, WATER_TILE } from './tiles';
+import { FALLBACK_LAND_TILE, isWater, WATER_TILE } from './tiles';
 import type { GenerationContext, PortAnchor, PortTypeId, TileTypeId } from './types';
 
 /**
@@ -110,6 +111,81 @@ export function islandLayout(config: IslandLayoutConfig) {
     };
 }
 
+/**
+ * Characters used when drawing a board as text.
+ *
+ * `~` sea, `?` fog (face-down), `.` a hex dealt at random from the pool, and a
+ * letter for any tile you want pinned to an exact spot.
+ */
+export const MAP_LEGEND: Record<string, TileTypeId | 'random'> = {
+    '~': 'water',
+    '?': 'fog',
+    '.': 'random',
+    F: 'forest',
+    P: 'pasture',
+    W: 'field',
+    M: 'mountain',
+    H: 'hill',
+    G: 'gold',
+    D: 'desert',
+};
+
+export interface MapLayoutConfig {
+    /**
+     * One string per row, one character per hex — see `MAP_LEGEND`. Spaces are
+     * ignored, so rows can be indented to show the board's shape.
+     */
+    map: string[];
+    /** The bag dealt to every `.` on the map, shuffled each game. */
+    pool?: Partial<Record<TileTypeId, number>>;
+    /** Extra or overridden characters, merged over `MAP_LEGEND`. */
+    legend?: Record<string, TileTypeId | 'random'>;
+}
+
+/**
+ * Builds a board from a text map.
+ *
+ * Fixed geography — coastlines, channels, the desert wall — is drawn directly,
+ * while `.` marks a hex whose tile is dealt from the pool, so a scenario keeps
+ * its shape while its resources still vary game to game.
+ *
+ * This is the easiest way to add a scenario: draw it, list the pool, done.
+ */
+export function mapLayout(config: MapLayoutConfig) {
+    const legend = { ...MAP_LEGEND, ...config.legend };
+
+    return (ctx: GenerationContext): TileTypeId[] => {
+        const cells: Array<TileTypeId | 'random'> = [];
+
+        ctx.rows.forEach((row, rowIndex) => {
+            const line = (config.map[rowIndex] ?? '').replace(/\s+/g, '');
+            if (line.length !== row.count) {
+                console.warn(
+                    `${ctx.variant.id}: map row ${rowIndex} has ${line.length} hexes, board has ${row.count}`
+                );
+            }
+            for (let col = 0; col < row.count; col++) {
+                const symbol = line[col];
+                const tile = symbol === undefined ? 'water' : legend[symbol];
+                if (tile === undefined) {
+                    console.warn(`${ctx.variant.id}: unknown map symbol "${symbol}"`);
+                }
+                cells.push(tile ?? 'water');
+            }
+        });
+
+        const bag = ctx.rng.shuffle(
+            repeat(Object.entries(config.pool ?? {}) as Array<[TileTypeId, number]>),
+            RNG_OFFSET.tiles
+        );
+
+        let cursor = 0;
+        return cells.map(cell =>
+            cell === 'random' ? bag[cursor++] ?? FALLBACK_LAND_TILE : cell
+        );
+    };
+}
+
 /** One pre-authored arrangement of islands, with its matching port positions. */
 export interface BoardTemplate {
     /** 1-based hex indices that are land. Everything else is sea. */
@@ -162,6 +238,37 @@ export function templatePortAnchors(templates: readonly BoardTemplate[]) {
 /** A fixed set of port anchors, for boards whose harbours never move. */
 export function fixedPortAnchors(anchors: PortAnchor[]) {
     return (): PortAnchor[] => anchors;
+}
+
+/**
+ * Spreads `count` harbours evenly around the longest coastline.
+ *
+ * Because this reads the coast of the board that was actually generated, a
+ * scenario's map can be redrawn without anyone having to re-pick harbour
+ * positions by hand — they follow the new shape. Ports go on the main landmass
+ * rather than one per outlying rock.
+ */
+export function coastPortAnchors(count: number) {
+    return (ctx: GenerationContext): PortAnchor[] => {
+        const loops = deriveCoastSides(
+            ctx.hexes,
+            ctx.rows,
+            ctx.metrics,
+            hex => !isWater(hex.tileType)
+        );
+        if (loops.length === 0 || count <= 0) return [];
+
+        const coast = loops.reduce((longest, loop) =>
+            loop.length > longest.length ? loop : longest
+        );
+        const wanted = Math.min(count, coast.length);
+        const step = coast.length / wanted;
+
+        return Array.from({ length: wanted }, (_, i) => {
+            const { hex, side } = coast[Math.floor(i * step) % coast.length];
+            return { hex, side };
+        });
+    };
 }
 
 /** A fixed port bag, shuffled so the same harbours land in different places. */

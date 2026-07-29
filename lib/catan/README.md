@@ -128,9 +128,13 @@ buildCustomVariant({
 })
 ```
 
-`BOARD_SIZES` are regular hexagons by radius. Any other outline comes from
-pinning hexes to `water` and letting the derived coastline follow the result —
-which is why there is no row editor.
+`BOARD_SIZES` starts as regular hexagons, then caps at `MAX_BOARD_ROWS` (7) and
+widens instead — the board is drawn at a fixed physical scale rather than being
+shrunk to fit, so a taller board would run off the bottom of the screen. The
+largest is `8-9-10-11-10-9-8`.
+
+Any other outline comes from pinning hexes to `water` and letting the derived
+coastline follow the result — which is why there is no row editor.
 
 Number tokens are sized to the board: `buildNumberDistribution(n)` spreads `n`
 tokens across 2-12 in classic proportions using largest-remainder allocation,

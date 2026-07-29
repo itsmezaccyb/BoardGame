@@ -27,20 +27,50 @@ import type {
 // --------------------------------------------------------------------------
 
 /**
- * Regular hexagonal boards, by radius. Radius 2 is the classic 19-hex board.
+ * How tall a board may get.
  *
- * Any other outline is made by locking hexes to water — carving the shape you
+ * The board is laid out at a fixed physical scale rather than being shrunk to
+ * fit, so past seven rows it runs off the bottom of the screen. Bigger sizes
+ * therefore keep seven rows and widen instead.
+ */
+export const MAX_BOARD_ROWS = 7;
+
+/** The radius at which a regular hexagon reaches `MAX_BOARD_ROWS`. */
+const TALLEST_RADIUS = (MAX_BOARD_ROWS - 1) / 2;
+
+/** How wide the top and bottom rows may grow once widening takes over. */
+const WIDEST_END_ROW = 8;
+
+/** Row counts for a regular hexagon: `radius + 1` at the ends, `2r + 1` across. */
+function hexagonRows(radius: number): number[] {
+    return Array.from({ length: radius * 2 + 1 }, (_, row) =>
+        radius + 1 + Math.min(row, radius * 2 - row)
+    );
+}
+
+const SIZE_LABELS = ['Tiny', 'Small', 'Medium', 'Large', 'Extra large', 'Huge', 'Max'];
+
+/**
+ * The shapes behind the size slider.
+ *
+ * Small boards are regular hexagons. Once seven rows is reached the outline
+ * stops growing taller and stretches sideways instead, one hex per step, until
+ * the top and bottom rows are `WIDEST_END_ROW` across.
+ *
+ * Any other outline is made by pinning hexes to water — carving the shape you
  * want out of a larger board — so there is no need to edit rows by hand.
  */
-export const BOARD_SIZES = [1, 2, 3, 4, 5].map(radius => {
-    const counts: number[] = [];
-    for (let row = 0; row < radius * 2 + 1; row++) {
-        counts.push(radius + 1 + Math.min(row, radius * 2 - row));
-    }
+const BOARD_SHAPES: number[][] = [
+    ...Array.from({ length: TALLEST_RADIUS }, (_, i) => hexagonRows(i + 1)),
+    ...Array.from({ length: WIDEST_END_ROW - (TALLEST_RADIUS + 1) }, (_, i) =>
+        hexagonRows(TALLEST_RADIUS).map(count => count + i + 1)
+    ),
+];
+
+export const BOARD_SIZES = BOARD_SHAPES.map((counts, index) => {
     const widest = Math.max(...counts);
     return {
-        radius,
-        label: ['Tiny', 'Small', 'Medium', 'Large', 'Huge'][radius - 1],
+        label: SIZE_LABELS[index] ?? `Size ${index + 1}`,
         hexCount: counts.reduce((sum, n) => sum + n, 0),
         rows: counts.map(count => ({ count, offset: (widest - count) / 2 })) as RowConfig[],
         widthHexes: widest,

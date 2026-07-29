@@ -169,8 +169,16 @@ map: [
 pool: { forest: 3, pasture: 3, field: 3, mountain: 3, hill: 2 },
 ```
 
-Row widths must match the board's rows; a mismatch warns in the console rather
-than failing, so a half-edited map still renders. See
+`?` marks a face-down hex. Fog is a **cover, not terrain**: those hexes hold
+real tiles dealt from a separate `hiddenMix`, numbered like any other, and
+clicking one on the board turns it face-up. The same is true on a custom board
+— pinning a hex to Fog covers whatever the bag deals it, so fog never uses up
+a tile of its own.
+
+Bags are given as proportions and scaled to fit the map exactly, so redrawing
+a board can never leave it with the wrong number of tiles. Row widths must
+match the board's rows; a mismatch warns in the console rather than failing,
+so a half-edited map still renders. See
 `variants/seafarers-scenarios.ts`, where each of the seven rulebook scenarios
 is a map plus a pool and nothing else — number tokens are counted from the map
 and harbours place themselves around the resulting coast.

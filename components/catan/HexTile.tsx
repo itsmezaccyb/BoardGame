@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { hexagonClipPath } from '@/lib/catan/hex-geometry';
-import { getTileImage } from '@/lib/catan/tiles';
+import { FOG_TILE, getTileImage } from '@/lib/catan/tiles';
 import type { Hex, HexMetrics, TileRenderMode, TileStyleId } from '@/lib/catan/types';
 
 interface HexTileProps {
@@ -11,6 +11,8 @@ interface HexTileProps {
     style: TileStyleId;
     /** 'cover' fits the artwork to the hex; 'rotated' turns it a quarter-turn first. */
     renderMode?: TileRenderMode;
+    /** Draw the fog cover instead of the tile underneath. */
+    covered?: boolean;
     children?: React.ReactNode;
 }
 
@@ -18,8 +20,16 @@ interface HexTileProps {
  * A single hex: its artwork, clipped to the hexagon, plus whatever is layered
  * on top (usually a number token).
  */
-export function HexTile({ hex, metrics, style, renderMode = 'cover', children }: HexTileProps) {
-    const image = getTileImage(hex.tileType, style);
+export function HexTile({
+    hex,
+    metrics,
+    style,
+    renderMode = 'cover',
+    covered = false,
+    children,
+}: HexTileProps) {
+    // A covered hex shows fog; the tile underneath is still there, just unseen.
+    const image = getTileImage(covered ? FOG_TILE : hex.tileType, style);
     const clipPath = `polygon(${hexagonClipPath(metrics)})`;
 
     return (
@@ -34,7 +44,7 @@ export function HexTile({ hex, metrics, style, renderMode = 'cover', children }:
                 zIndex: 2,
             }}
         >
-            {renderMode === 'rotated' ? (
+            {renderMode === 'rotated' && !covered ? (
                 <RotatedFill image={image} metrics={metrics} clipPath={clipPath} />
             ) : (
                 <div

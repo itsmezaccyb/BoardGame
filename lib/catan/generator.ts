@@ -50,9 +50,14 @@ export function generateBoard(
         hexes,
     };
 
-    const tileIds = variant.layout(ctx);
+    const result = variant.layout(ctx);
+    const tileIds = Array.isArray(result) ? result : result.tiles;
+    const fogged = new Set(Array.isArray(result) ? [] : result.fogged ?? []);
+
     hexes.forEach(hex => {
         hex.tileType = tileIds[hex.index] ?? WATER_TILE;
+        // The tile underneath is real; only its visibility differs.
+        if (fogged.has(hex.index + 1)) hex.fogged = true;
     });
 
     assignNumbers(hexes, rows, variant.numberDistribution, rng);
@@ -83,7 +88,9 @@ function insideRegion(
     region: CoastlineRegion,
     ctx: GenerationContext
 ): (hex: Hex) => boolean {
-    if (region === 'land') return hex => !isWater(hex.tileType);
+    // A face-down hex counts as land whatever is under it, so the coastline
+    // cannot be read to work out what the fog is hiding.
+    if (region === 'land') return hex => hex.fogged === true || !isWater(hex.tileType);
 
     const indices = new Set(typeof region === 'function' ? region(ctx) : region);
     return hex => indices.has(hex.index + 1);

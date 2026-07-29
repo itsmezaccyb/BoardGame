@@ -2,10 +2,11 @@ import { deriveCoastSides, totalHexCount } from './hex-geometry';
 import { RNG_OFFSET } from './layouts';
 import { buildNumberDistribution } from './numbers';
 import { repeat } from './random';
-import { isWater, takesNumberToken, WATER_TILE } from './tiles';
+import { FOG_TILE, isWater, takesNumberToken, WATER_TILE } from './tiles';
 import type {
     BoardVariant,
     GenerationContext,
+    LayoutResult,
     Hex,
     HexMetrics,
     HexSide,
@@ -155,9 +156,15 @@ export function pruneToBoard(config: CustomBoardConfig): CustomBoardConfig {
     };
 }
 
-/** Hexes available to the shuffled pool — everything not pinned by hand. */
+/**
+ * Hexes that still need a tile from the bag.
+ *
+ * A hex pinned to fog counts here: fog only covers what is underneath, so the
+ * bag has to fill it like any other hex.
+ */
 export function unlockedHexCount(config: CustomBoardConfig): number {
-    return boardSize(config.sizeIndex).hexCount - Object.keys(config.locked).length;
+    const pinnedTiles = Object.values(config.locked).filter(tile => tile !== FOG_TILE).length;
+    return boardSize(config.sizeIndex).hexCount - pinnedTiles;
 }
 
 export function placedTileCount(config: CustomBoardConfig): number {
@@ -233,14 +240,24 @@ export function buildCustomVariant(config: CustomBoardConfig): BoardVariant {
     const size = boardSize(config.sizeIndex);
     const hexCount = totalHexCount(size.rows);
 
-    const layout = (ctx: GenerationContext): TileTypeId[] => {
+    const layout = (ctx: GenerationContext): LayoutResult => {
         const tiles: TileTypeId[] = Array.from({ length: hexCount }, () => WATER_TILE);
 
         const open: number[] = [];
+        const fogged: number[] = [];
+
         for (let i = 0; i < hexCount; i++) {
             const locked = config.locked[i + 1];
-            if (locked) tiles[i] = locked;
-            else open.push(i);
+            // Fog is a cover, not a tile: a hex marked as fog still draws a real
+            // tile from the bag, it just starts face-down.
+            if (locked === FOG_TILE) {
+                fogged.push(i + 1);
+                open.push(i);
+            } else if (locked) {
+                tiles[i] = locked;
+            } else {
+                open.push(i);
+            }
         }
 
         const pool = ctx.rng.shuffle(
@@ -251,7 +268,7 @@ export function buildCustomVariant(config: CustomBoardConfig): BoardVariant {
             if (i < pool.length) tiles[hexIndex] = pool[i];
         });
 
-        return tiles;
+        return { tiles, fogged };
     };
 
     // Numbers are sized to however many producing tiles the board ends up with.
@@ -259,7 +276,9 @@ export function buildCustomVariant(config: CustomBoardConfig): BoardVariant {
         Object.entries(config.tileCounts)
             .filter(([id]) => takesNumberToken(id))
             .reduce((sum, [, n]) => sum + (n || 0), 0) +
-        Object.values(config.locked).filter(takesNumberToken).length;
+        Object.values(config.locked).filter(
+            tile => tile !== FOG_TILE && takesNumberToken(tile)
+        ).length;
 
     return {
         id: CUSTOM_VARIANT_ID,

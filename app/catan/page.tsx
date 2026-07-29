@@ -49,6 +49,9 @@ export default function CatanPage() {
     const [selectedHexId, setSelectedHexId] = useState<string | null>(null);
     const [numberSwaps, setNumberSwaps] = useState<Map<string, number>>(new Map());
 
+    // Face-down hexes the player has turned over.
+    const [revealed, setRevealed] = useState<Set<string>>(new Set());
+
     // Custom board building.
     const [custom, setCustom] = useState<CustomBoardConfig>(DEFAULT_CUSTOM_CONFIG);
     const [editMode, setEditMode] = useState<EditMode>(null);
@@ -210,6 +213,7 @@ export default function CatanPage() {
     useEffect(() => {
         setNumberSwaps(new Map());
         setSelectedHexId(null);
+        setRevealed(new Set());
     }, [variant.id, seed]);
 
     /** Tap two tokens to trade their numbers. */
@@ -264,6 +268,8 @@ export default function CatanPage() {
                 onHexClick={handleHexClick}
                 onCoastSideClick={handleCoastSideClick}
                 lockedHexes={custom.locked}
+                revealedHexes={revealed}
+                onRevealHex={hex => setRevealed(prev => new Set(prev).add(hex.id))}
             />
 
             <GameSettingsPanel

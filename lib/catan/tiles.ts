@@ -107,10 +107,10 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
     fog: {
         id: 'fog',
         label: 'Fog',
-        // Counted as land so it takes a tile border and sits inside the
-        // coastline — a face-down hex is a placed tile, not open sea.
+        // Fog is a cover rather than terrain: it is never the tile a hex ends
+        // up as, only what is drawn over one until it is turned face-up. The
+        // registry entry exists so the artwork resolves like any other tile.
         category: 'land',
-        // Face-down hexes hide their number until they are revealed in play.
         producesResource: false,
         images: {
             classic: '/images/catan_fog.png',
@@ -128,6 +128,12 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
 
 /** The tile used wherever a variant leaves a hex unspecified. */
 export const WATER_TILE: TileTypeId = 'water';
+
+/**
+ * The face-down cover. Not terrain — a hex marked with this still holds a real
+ * tile underneath, which is what appears when it is turned over.
+ */
+export const FOG_TILE: TileTypeId = 'fog';
 
 /** The tile used when a resource pool runs out before the land does. */
 export const FALLBACK_LAND_TILE: TileTypeId = 'desert';

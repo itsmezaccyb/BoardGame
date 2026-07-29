@@ -73,6 +73,14 @@ export interface Hex {
     tileType: TileTypeId;
     /** Dice number token, when this tile takes one. */
     number?: number;
+    /**
+     * Face-down: a real tile sits here, covered until someone turns it over.
+     *
+     * Fog is a cover rather than a kind of tile, so the board underneath is
+     * generated in full — terrain and number alike — and revealing simply stops
+     * hiding it.
+     */
+    fogged?: boolean;
 }
 
 /** A port boat rendered at a board edge. */
@@ -90,6 +98,21 @@ export interface PortPlacement {
  * board outline at once.
  */
 export type OutlineWeight = 'board' | 'island';
+
+/**
+ * What a layout hands back.
+ *
+ * Usually just the tile of every hex in reading order. A board with face-down
+ * hexes returns the covered ones too — they still get real tiles, so the shape
+ * of the board is decided once and revealing changes nothing but what is shown.
+ */
+export type LayoutResult =
+    | TileTypeId[]
+    | {
+        tiles: TileTypeId[];
+        /** 1-based hex indices that start face-down. */
+        fogged?: number[];
+    };
 
 /**
  * Which hexes a coastline wraps.
@@ -213,7 +236,7 @@ export interface BoardVariant {
     /** How many of each dice number to hand out, e.g. `{ 2: 1, 3: 2, ... }`. */
     numberDistribution: Record<number, number>;
     /** Decides the tile type of every hex, in board reading order. */
-    layout: (ctx: GenerationContext) => TileTypeId[];
+    layout: (ctx: GenerationContext) => LayoutResult;
     /** Coastlines to draw around the finished board. */
     coastlines?: CoastlineSpec[];
     ports?: {

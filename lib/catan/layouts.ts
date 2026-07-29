@@ -1,7 +1,13 @@
 import { deriveCoastSides } from './hex-geometry';
 import { repeat } from './random';
 import { FALLBACK_LAND_TILE, isWater, WATER_TILE } from './tiles';
-import type { GenerationContext, PortAnchor, PortTypeId, TileTypeId } from './types';
+import type {
+    GenerationContext,
+    LayoutResult,
+    PortAnchor,
+    PortTypeId,
+    TileTypeId,
+} from './types';
 
 /**
  * Reusable layout strategies.
@@ -19,6 +25,7 @@ export const RNG_OFFSET = {
     tileVariation: 3000,
     resourceSplit: 5000,
     template: 5000,
+    hiddenTiles: 6000,
     fourIslandsTiles: 7000,
     fourIslandsPorts: 8000,
     classicPorts: 0,
@@ -117,9 +124,9 @@ export function islandLayout(config: IslandLayoutConfig) {
  * `~` sea, `?` fog (face-down), `.` a hex dealt at random from the pool, and a
  * letter for any tile you want pinned to an exact spot.
  */
-export const MAP_LEGEND: Record<string, TileTypeId | 'random'> = {
+export const MAP_LEGEND: Record<string, TileTypeId | 'random' | 'hidden'> = {
     '~': 'water',
-    '?': 'fog',
+    '?': 'hidden',
     '.': 'random',
     F: 'forest',
     P: 'pasture',
@@ -138,8 +145,15 @@ export interface MapLayoutConfig {
     map: string[];
     /** The bag dealt to every `.` on the map, shuffled each game. */
     pool?: Partial<Record<TileTypeId, number>>;
+    /**
+     * The bag dealt to every `?` on the map — real tiles, placed face-down.
+     *
+     * They are laid out and numbered like any other hex; the board just does
+     * not show them until they are turned over.
+     */
+    hidden?: Partial<Record<TileTypeId, number>>;
     /** Extra or overridden characters, merged over `MAP_LEGEND`. */
-    legend?: Record<string, TileTypeId | 'random'>;
+    legend?: Record<string, TileTypeId | 'random' | 'hidden'>;
 }
 
 /**
@@ -154,8 +168,8 @@ export interface MapLayoutConfig {
 export function mapLayout(config: MapLayoutConfig) {
     const legend = { ...MAP_LEGEND, ...config.legend };
 
-    return (ctx: GenerationContext): TileTypeId[] => {
-        const cells: Array<TileTypeId | 'random'> = [];
+    return (ctx: GenerationContext): LayoutResult => {
+        const cells: Array<TileTypeId | 'random' | 'hidden'> = [];
 
         ctx.rows.forEach((row, rowIndex) => {
             const line = (config.map[rowIndex] ?? '').replace(/\s+/g, '');
@@ -178,11 +192,25 @@ export function mapLayout(config: MapLayoutConfig) {
             repeat(Object.entries(config.pool ?? {}) as Array<[TileTypeId, number]>),
             RNG_OFFSET.tiles
         );
+        const hiddenBag = ctx.rng.shuffle(
+            repeat(Object.entries(config.hidden ?? {}) as Array<[TileTypeId, number]>),
+            RNG_OFFSET.hiddenTiles
+        );
 
         let cursor = 0;
-        return cells.map(cell =>
-            cell === 'random' ? bag[cursor++] ?? FALLBACK_LAND_TILE : cell
-        );
+        let hiddenCursor = 0;
+        const fogged: number[] = [];
+
+        const tiles = cells.map((cell, index) => {
+            if (cell === 'random') return bag[cursor++] ?? FALLBACK_LAND_TILE;
+            if (cell === 'hidden') {
+                fogged.push(index + 1);
+                return hiddenBag[hiddenCursor++] ?? FALLBACK_LAND_TILE;
+            }
+            return cell;
+        });
+
+        return { tiles, fogged };
     };
 }
 

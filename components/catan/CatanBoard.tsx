@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { inchesToPixels } from '@/lib/dimensions';
 import {
     deriveCoastSides,
@@ -37,6 +37,11 @@ interface CatanBoardProps {
     onCoastSideClick?: (side: { hex: number; side: HexSide }) => void;
     /** 1-based indices of hexes pinned by hand, shown with a marker. */
     lockedHexes?: Record<number, unknown>;
+
+    /** Hex ids the player has turned face-up. */
+    revealedHexes?: Set<string>;
+    /** Called when a face-down hex is clicked, to turn it over. */
+    onRevealHex?: (hex: Hex) => void;
 }
 
 /**
@@ -57,13 +62,28 @@ export function CatanBoard({
     onHexClick,
     onCoastSideClick,
     lockedHexes,
+    revealedHexes,
+    onRevealHex,
 }: CatanBoardProps) {
     const style = getTileStyle(styleId);
     const { hexes, metrics, width, height, variant } = board;
     const display = variant.display ?? {};
 
-    const waterHexes = useMemo(() => hexes.filter(hex => isWater(hex.tileType)), [hexes]);
-    const landHexes = useMemo(() => hexes.filter(hex => !isWater(hex.tileType)), [hexes]);
+    // A face-down hex is drawn as a placed tile whatever is under it, so the
+    // borders give nothing away about what the fog is hiding.
+    const isCovered = useCallback(
+        (hex: Hex) => hex.fogged === true && !revealedHexes?.has(hex.id),
+        [revealedHexes]
+    );
+
+    const waterHexes = useMemo(
+        () => hexes.filter(hex => isWater(hex.tileType) && !isCovered(hex)),
+        [hexes, isCovered]
+    );
+    const landHexes = useMemo(
+        () => hexes.filter(hex => !isWater(hex.tileType) || isCovered(hex)),
+        [hexes, isCovered]
+    );
 
     // Where a harbour could go: every side of the coast, including around
     // stray islands, so any of them can be clicked while editing ports.
@@ -177,6 +197,9 @@ export function CatanBoard({
                     const value = numberOverrides?.get(hex.id) ?? hex.number;
                     const hexNumber = hex.index + 1;
                     const pinned = Boolean(lockedHexes?.[hexNumber]);
+                    // Face-down until turned over — the tile and its number are
+                    // already decided, just not shown.
+                    const covered = hex.fogged === true && !revealedHexes?.has(hex.id);
                     return (
                         <HexTile
                             key={hex.id}
@@ -184,7 +207,22 @@ export function CatanBoard({
                             metrics={metrics}
                             style={styleId}
                             renderMode={display.tileRender}
+                            covered={covered}
                         >
+                            {covered && editMode === null && (
+                                <div
+                                    onClick={() => onRevealHex?.(hex)}
+                                    title="Turn this hex face-up"
+                                    style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        cursor: 'pointer',
+                                        zIndex: 12,
+                                        clipPath: `polygon(${hexagonClipPath(metrics)})`,
+                                    }}
+                                />
+                            )}
+
                             {editMode === 'tiles' && (
                                 <div
                                     onClick={() => onHexClick?.(hexNumber)}
@@ -221,7 +259,7 @@ export function CatanBoard({
                                 </div>
                             )}
 
-                            {hex.number !== undefined && value !== undefined && (
+                            {!covered && hex.number !== undefined && value !== undefined && (
                                 <NumberToken
                                     value={value}
                                     hexWidth={metrics.width}

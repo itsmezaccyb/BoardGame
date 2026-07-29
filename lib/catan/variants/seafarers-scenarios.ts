@@ -134,17 +134,17 @@ export const FOG_ISLAND = scenario('fog-island', 'The Fog Island', {
 export const THROUGH_THE_DESERT = scenario('through-the-desert', 'Through the Desert', {
     rows: SEAFARERS_ROWS.large,
     map: [
-        '~...D~~',
+        '~....~~',
         '~....D~~',
         '~.....D~~',
         '~.....D~~G',
-        '~....D~G~',
+        '~.....~G~',
         '~....~~G',
         '~...~~~',
     ],
-    // The five wall deserts and three gold rocks are placed by hand, so the
-    // bag holds only what fills the land either side of the wall.
-    pool: { forest: 6, pasture: 6, field: 6, mountain: 5, hill: 5 },
+    // Three deserts form the wall, per the rulebook, and the three gold rocks
+    // are placed by hand; the bag fills the land either side of the wall.
+    pool: { forest: 6, pasture: 6, field: 6, mountain: 6, hill: 6 },
 });
 
 /**

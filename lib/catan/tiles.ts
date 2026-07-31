@@ -38,6 +38,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
         images: {
             classic: '/images/catan_woods.png',
             simple: '/images/catan_wood_style.jpg',
+            nights: '/images/catan_woods_nights.png',
         },
     },
     pasture: {
@@ -49,6 +50,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
         images: {
             classic: '/images/catan_sheep.png',
             simple: '/images/catan_sheep_style.jpg',
+            nights: '/images/catan_sheep_nights.png',
         },
     },
     field: {
@@ -60,6 +62,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
         images: {
             classic: '/images/catan_wheat.png',
             simple: '/images/catan_wheat_style.jpg',
+            nights: '/images/catan_wheat_nights.png',
         },
     },
     mountain: {
@@ -71,6 +74,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
         images: {
             classic: '/images/catan_rock.png',
             simple: '/images/catan_rock_style.jpg',
+            nights: '/images/catan_rock_nights.png',
         },
     },
     hill: {
@@ -82,6 +86,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
         images: {
             classic: '/images/catan_brick.png',
             simple: '/images/catan_brick_style.jpg',
+            nights: '/images/catan_brick_nights.png',
         },
     },
     gold: {
@@ -92,6 +97,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
         images: {
             classic: '/images/catan_gold.jpg',
             simple: '/images/catan_gold_style.png',
+            nights: '/images/catan_gold_nights.png',
         },
     },
     desert: {
@@ -102,6 +108,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
         images: {
             classic: '/images/catan_desert.png',
             simple: '/images/catan_desert_style.jpg',
+            nights: '/images/catan_desert_nights.png',
         },
     },
     fog: {
@@ -115,6 +122,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
         images: {
             classic: '/images/catan_fog.png',
             simple: '/images/catan_fog_style.png',
+            nights: '/images/catan_fog_nights.png',
         },
     },
     water: {

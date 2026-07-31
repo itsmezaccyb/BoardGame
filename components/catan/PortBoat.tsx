@@ -31,7 +31,7 @@ export function PortBoat({ placement, style, hexWidth }: PortBoatProps) {
     if (!boat) return null;
 
     const logo = style.port.mode === 'overlay' ? getPortLogo(placement.portType, style.id) : null;
-    const logoSize = `${getPortLogoScale(placement.portType) * 100}%`;
+    const logoSize = `${getPortLogoScale(placement.portType, style.id) * 100}%`;
 
     return (
         <div

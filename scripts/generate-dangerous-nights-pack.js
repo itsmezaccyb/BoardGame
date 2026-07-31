@@ -754,10 +754,56 @@ function drawWater() {
  * The harbour boat: a low black hull with light under the waterline and a
  * dark sail. The sail is left clear — the resource glyph is stamped onto it.
  */
+/**
+ * How far either side of centre the two corners of the hex side fall, as a
+ * fraction of the boat image.
+ *
+ * A port is centred on a hex side and rotated so that side runs horizontally
+ * through the middle of the image — which means both of its corners sit on the
+ * image's horizontal centre line. The hexagon is regular, so each side is
+ * 0.5774 hex-widths long, and the image is drawn `PORT_SIZE_FACTOR` hex-widths
+ * across. Keep that in step with `sizeFactor` for `nights` in styles.ts.
+ */
+const PORT_SIZE_FACTOR = 1.66;
+const HEX_SIDE_OVER_WIDTH = 0.5774;
+const CORNER_OFFSET = HEX_SIDE_OVER_WIDTH / PORT_SIZE_FACTOR / 2;
+
 function drawBoat() {
     const canvas = createCanvas(BOAT, BOAT);
     const ctx = canvas.getContext('2d');
     const unit = BOAT / 100;
+
+    // Mooring lines run from the boat to the two corners of the hex side it is
+    // moored against — the two spots that can actually trade through it. The
+    // Classic boats do this with painted planks; here they are lit rope, with a
+    // bright node on each corner so there is no guessing which two they are.
+    const corners = [
+        { x: BOAT * (0.5 - CORNER_OFFSET), y: BOAT * 0.5 },
+        { x: BOAT * (0.5 + CORNER_OFFSET), y: BOAT * 0.5 },
+    ];
+    // Where the hull ends up once the transform below has been applied.
+    const hullTips = [
+        { x: BOAT * 0.34, y: BOAT * 0.72 },
+        { x: BOAT * 0.66, y: BOAT * 0.72 },
+    ];
+
+    corners.forEach((corner, i) => {
+        glowing(ctx, { color: NEON.cyan, blur: 20, alpha: 0.55 }, () => {
+            ctx.beginPath();
+            ctx.moveTo(hullTips[i].x, hullTips[i].y);
+            ctx.lineTo(corner.x, corner.y);
+            ctx.strokeStyle = rgba(NEON.cyan, 0.45);
+            ctx.lineWidth = 5;
+            ctx.stroke();
+        });
+
+        glowing(ctx, { color: NEON.white, blur: 24, alpha: 0.9 }, () => {
+            ctx.beginPath();
+            ctx.arc(corner.x, corner.y, 11, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(NEON.white, 0.85);
+            ctx.fill();
+        });
+    });
 
     // A port is anchored to a hex side and rotated so that the image's LOWER
     // half is the one facing open water — the upper half ends up behind the
@@ -765,6 +811,7 @@ function drawBoat() {
     // and scaled into that lower half: the mast then points out to sea and no
     // part of it is lost behind the coast. Everything below is authored the
     // right way up in a 0-100 space; this transform does the moving.
+    ctx.save();
     ctx.translate(576, 789);
     ctx.rotate(Math.PI);
     ctx.scale(0.5, 0.48);
@@ -827,6 +874,7 @@ function drawBoat() {
         ctx.stroke();
     });
 
+    ctx.restore();
     return canvas;
 }
 

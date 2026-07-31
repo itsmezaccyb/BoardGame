@@ -118,9 +118,10 @@ export const TILE_STYLES: Record<TileStyleId, TileStyle> = {
             ],
         },
         port: {
-            // The art occupies half its canvas (see the generator), so this is
-            // twice what it would otherwise be.
-            sizeFactor: 2.6,
+            // The art occupies about a third of its canvas (see the generator),
+            // so this is larger than it looks — it puts the boat on screen at
+            // the same 0.62 hex-widths across as the Classic and Simple packs.
+            sizeFactor: 1.66,
             mode: 'overlay',
             baseImage: '/images/catan_boat_nights.png',
             logoPosition: { top: '79%', left: '46%' },

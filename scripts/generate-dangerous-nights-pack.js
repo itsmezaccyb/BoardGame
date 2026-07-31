@@ -507,6 +507,100 @@ function drawDesert() {
     return canvas;
 }
 
+/**
+ * Figures for the gold tile, posed like the neon over a late bar.
+ *
+ * Each is a head plus a handful of curves in a 0-100 box — line art, not
+ * anatomy. Drawn dark first so the shape reads against the bright gold, then
+ * lined with neon.
+ */
+const FIGURES = {
+    /** Standing, weight on one leg, one arm thrown up. */
+    standing: {
+        head: { x: 50, y: 13, r: 8 },
+        hair: [[42, 6], [31, 18], [38, 34]],
+        skirt: [[56, 45], [43, 67], [70, 64]],
+        strokes: [
+            [[50, 21], [52, 34], [56, 51]],   // spine, with a lean in it
+            [[56, 51], [47, 69], [44, 92]],   // near leg
+            [[56, 51], [64, 71], [67, 92]],   // far leg
+            [[52, 31], [40, 41], [36, 56]],   // arm down to the hip
+            [[54, 31], [67, 23], [73, 8]],    // arm raised
+        ],
+    },
+    /** Seated, leaning back on one arm, legs crossed away. */
+    seated: {
+        head: { x: 34, y: 21, r: 7.5 },
+        hair: [[26, 14], [17, 27], [27, 41]],
+        strokes: [
+            [[35, 29], [43, 42], [51, 54]],   // spine
+            [[51, 54], [67, 57], [81, 45]],   // upper leg
+            [[51, 54], [64, 67], [83, 63]],   // crossed leg
+            [[38, 35], [30, 50], [24, 61]],   // arm bracing behind
+            [[40, 35], [55, 41], [63, 31]],   // arm forward
+        ],
+    },
+};
+
+/** Traces one figure's curves at the current transform. */
+function traceFigure(ctx, figure, u) {
+    figure.strokes.concat([figure.hair]).forEach(([a, b, c]) => {
+        ctx.beginPath();
+        ctx.moveTo(a[0] * u, a[1] * u);
+        ctx.quadraticCurveTo(b[0] * u, b[1] * u, c[0] * u, c[1] * u);
+        ctx.stroke();
+    });
+}
+
+/** Draws a figure at `x`,`y`, sized to `scale` of the tile. */
+function drawFigure(ctx, { figure, x, y, scale, color }) {
+    const u = (TILE * scale) / 100;
+
+    ctx.save();
+    ctx.translate(TILE * x, TILE * y);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const head = () => {
+        ctx.beginPath();
+        ctx.arc(figure.head.x * u, figure.head.y * u, figure.head.r * u, 0, Math.PI * 2);
+    };
+
+    const skirt = () => {
+        if (!figure.skirt) return false;
+        ctx.beginPath();
+        figure.skirt.forEach(([px, py], i) => {
+            if (i === 0) ctx.moveTo(px * u, py * u);
+            else ctx.lineTo(px * u, py * u);
+        });
+        ctx.closePath();
+        return true;
+    };
+
+    // Dark pass: the silhouette, which is what carries at hex size.
+    ctx.strokeStyle = rgba(INK, 0.9);
+    ctx.fillStyle = rgba(INK, 0.9);
+    ctx.lineWidth = 7 * u;
+    traceFigure(ctx, figure, u);
+    if (skirt()) ctx.fill();
+    head();
+    ctx.fill();
+    ctx.lineWidth = 4 * u;
+    ctx.stroke();
+
+    // Neon rim over the top.
+    glowing(ctx, { color, blur: 30, alpha: 0.85 }, () => {
+        ctx.strokeStyle = rgba(color, 0.65);
+        ctx.lineWidth = 2.6 * u;
+        traceFigure(ctx, figure, u);
+        if (skirt()) ctx.stroke();
+        head();
+        ctx.stroke();
+    });
+
+    ctx.restore();
+}
+
 /** Gold — crumpled leaf, the brightest thing on the board. */
 function drawGold() {
     const { canvas, ctx, size } = tileCanvas();
@@ -556,6 +650,11 @@ function drawGold() {
             alpha: 0.3 + random() * 0.45,
         });
     }
+
+    // The sign over the gold. Two figures, one standing and one sat back, so
+    // the tile is the one you look at twice.
+    drawFigure(ctx, { figure: FIGURES.standing, x: 0.04, y: 0.16, scale: 0.56, color: NEON.magenta });
+    drawFigure(ctx, { figure: FIGURES.seated, x: 0.44, y: 0.4, scale: 0.54, color: NEON.cyan });
 
     vignette(ctx, size, 0.5);
     grain(ctx, size, 10, 13579);

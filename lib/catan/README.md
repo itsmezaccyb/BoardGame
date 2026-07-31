@@ -154,6 +154,11 @@ that they are ordinary anchors the player can add or remove one at a time.
 | `islandLayout`    | a mainland plus small islands in open sea (Heading for New Shores) |
 | `templateLayout`  | several hand-authored island arrangements, one picked per game (4 Islands) |
 
+`islandLayout` can also be told what shape the archipelago should come out in:
+`islandCount: { min, max }` keeps redrawing the sunk hexes until the small
+islands form that many separate landmasses, and `onePerIsland: ['gold']` deals
+the bag island by island so no two golds share one.
+
 `mapLayout` is the quickest way to add a scenario — you draw it:
 
 ```ts

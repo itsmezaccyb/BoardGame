@@ -1,4 +1,4 @@
-import { deriveCoastSides } from './hex-geometry';
+import { deriveCoastSides, indexToRowCol, neighbors, rowColToIndex } from './hex-geometry';
 import { repeat } from './random';
 import { FALLBACK_LAND_TILE, isWater, WATER_TILE } from './tiles';
 import type {
@@ -6,6 +6,7 @@ import type {
     LayoutResult,
     PortAnchor,
     PortTypeId,
+    RowConfig,
     TileTypeId,
 } from './types';
 
@@ -23,6 +24,7 @@ export const RNG_OFFSET = {
     smallIslandTiles: 1000,
     smallIslandWater: 2000,
     tileVariation: 3000,
+    islandSpread: 4000,
     resourceSplit: 5000,
     template: 5000,
     hiddenTiles: 6000,
@@ -64,6 +66,17 @@ export interface IslandLayoutConfig {
     mainlandTiles: (ctx: GenerationContext) => TileTypeId[];
     /** The bag of tiles dealt to the small islands. */
     smallIslandTiles: (ctx: GenerationContext) => TileTypeId[];
+    /**
+     * How many separate landmasses the small islands must break into. Omit to
+     * let the sunk slots fall wherever they land.
+     */
+    islandCount?: { min: number; max: number };
+    /**
+     * Tiles that must not share an island — each island gets at most one.
+     * Used to keep the gold fields apart, so no single island is worth
+     * sailing to twice over.
+     */
+    onePerIsland?: TileTypeId[];
 }
 
 /**
@@ -82,22 +95,28 @@ export function islandLayout(config: IslandLayoutConfig) {
                 n => !openSea.has(n) && !mainland.has(n)
             );
 
-        // Sink a few small-island slots so the archipelago differs each game.
-        const sunk = new Set(
-            rng
-                .shuffle(smallIslands, RNG_OFFSET.smallIslandWater)
-                .slice(0, config.smallIslandSeaCount)
-        );
-        const smallIslandSet = new Set(smallIslands);
-
         const mainlandBag = rng.shuffle(config.mainlandTiles(ctx), RNG_OFFSET.tiles);
         const smallIslandBag = rng.shuffle(
             config.smallIslandTiles(ctx),
             RNG_OFFSET.smallIslandTiles
         );
 
+        // Sink a few small-island slots so the archipelago differs each game,
+        // then deal that bag island by island rather than in board order.
+        const sunk = sinkSmallIslands(smallIslands, config, smallIslandBag, ctx);
+        const islands = connectedGroups(
+            smallIslands.filter(hexNumber => !sunk.has(hexNumber)),
+            ctx.rows
+        );
+        const smallIslandTiles = dealSmallIslands(
+            islands,
+            smallIslandBag,
+            config.onePerIsland ?? [],
+            ctx
+        );
+
+        const smallIslandSet = new Set(smallIslands);
         let mainlandCursor = 0;
-        let smallIslandCursor = 0;
 
         return Array.from({ length: hexCount }, (_, i) => {
             const hexNumber = i + 1;
@@ -106,7 +125,7 @@ export function islandLayout(config: IslandLayoutConfig) {
 
             if (smallIslandSet.has(hexNumber)) {
                 if (sunk.has(hexNumber)) return WATER_TILE;
-                return smallIslandBag[smallIslandCursor++] ?? FALLBACK_LAND_TILE;
+                return smallIslandTiles.get(hexNumber) ?? FALLBACK_LAND_TILE;
             }
 
             if (mainland.has(hexNumber)) {
@@ -116,6 +135,133 @@ export function islandLayout(config: IslandLayoutConfig) {
             return FALLBACK_LAND_TILE;
         });
     };
+}
+
+/** How many draws to try before settling for the closest near miss. */
+const ISLAND_SHAPE_ATTEMPTS = 128;
+
+/**
+ * Chooses which small-island slots stay as sea.
+ *
+ * With no `islandCount` this is a plain random draw. With one, draws are
+ * retried until the surviving land falls into the wanted number of separate
+ * islands — and never fewer than there are tiles to keep apart, since one
+ * island cannot hold two golds.
+ */
+function sinkSmallIslands(
+    smallIslands: number[],
+    config: IslandLayoutConfig,
+    bag: readonly TileTypeId[],
+    ctx: GenerationContext
+): Set<number> {
+    const draw = (attempt: number) =>
+        new Set(
+            ctx.rng
+                .shuffle(smallIslands, RNG_OFFSET.smallIslandWater + attempt)
+                .slice(0, config.smallIslandSeaCount)
+        );
+
+    if (!config.islandCount) return draw(0);
+
+    const spread = new Set(config.onePerIsland ?? []);
+    const min = Math.max(config.islandCount.min, bag.filter(tile => spread.has(tile)).length);
+    const max = Math.max(config.islandCount.max, min);
+
+    let best = new Set<number>();
+    let bestMiss = Infinity;
+
+    for (let attempt = 0; attempt < ISLAND_SHAPE_ATTEMPTS; attempt++) {
+        const sunk = draw(attempt);
+        const count = connectedGroups(
+            smallIslands.filter(hexNumber => !sunk.has(hexNumber)),
+            ctx.rows
+        ).length;
+
+        const miss = Math.max(min - count, count - max, 0);
+        if (miss === 0) return sunk;
+        if (miss < bestMiss) {
+            bestMiss = miss;
+            best = sunk;
+        }
+    }
+
+    console.warn(
+        `${ctx.variant.id}: could not shape the small islands into ${min}-${max} landmasses`
+    );
+    return best;
+}
+
+/**
+ * Deals the small-island bag over the islands, placing the `onePerIsland`
+ * tiles first so each lands on an island of its own.
+ */
+function dealSmallIslands(
+    islands: readonly number[][],
+    bag: readonly TileTypeId[],
+    onePerIsland: readonly TileTypeId[],
+    ctx: GenerationContext
+): Map<number, TileTypeId> {
+    const placed = new Map<number, TileTypeId>();
+    const spread = new Set(onePerIsland);
+    const spaced = bag.filter(tile => spread.has(tile));
+    const rest = bag.filter(tile => !spread.has(tile));
+
+    // Which islands get one, and where on the island it sits, both vary.
+    const order = ctx.rng.shuffle(islands.map((_, index) => index), RNG_OFFSET.islandSpread);
+    const overflow: TileTypeId[] = [];
+
+    spaced.forEach((tile, index) => {
+        const island = order.length > 0 ? islands[order[index % order.length]] : undefined;
+        const free = island?.filter(hexNumber => !placed.has(hexNumber)) ?? [];
+        if (free.length === 0) {
+            overflow.push(tile);
+            return;
+        }
+        placed.set(ctx.rng.pick(free, RNG_OFFSET.islandSpread + 1 + index), tile);
+    });
+
+    // The bag was shuffled on the way in, so filling in board order is enough.
+    const fill = [...overflow, ...rest];
+    islands
+        .flat()
+        .filter(hexNumber => !placed.has(hexNumber))
+        .sort((a, b) => a - b)
+        .forEach((hexNumber, index) => {
+            const tile = fill[index];
+            if (tile) placed.set(hexNumber, tile);
+        });
+
+    return placed;
+}
+
+/** Splits hexes into landmasses — one entry per group of touching hexes. */
+function connectedGroups(members: readonly number[], rows: readonly RowConfig[]): number[][] {
+    const unvisited = new Set(members);
+    const groups: number[][] = [];
+
+    members.forEach(start => {
+        if (!unvisited.delete(start)) return;
+
+        const group: number[] = [];
+        const queue = [start];
+
+        while (queue.length > 0) {
+            const hexNumber = queue.pop() as number;
+            group.push(hexNumber);
+
+            const coords = indexToRowCol(rows, hexNumber - 1);
+            if (!coords) continue;
+
+            neighbors(rows, coords.row, coords.col).forEach(({ row, col }) => {
+                const neighbor = rowColToIndex(rows, row, col) + 1;
+                if (unvisited.delete(neighbor)) queue.push(neighbor);
+            });
+        }
+
+        groups.push(group);
+    });
+
+    return groups;
 }
 
 /**

@@ -11,7 +11,17 @@ import { SEAFARERS_DISPLAY, SEAFARERS_ROWS } from './seafarers-common';
  *
  * Each board's mainland is declared once, below, and used both to place its
  * tiles and to draw its coastline — the two cannot drift apart.
+ *
+ * The archipelago is reshuffled every game but always breaks into two or three
+ * separate islands, and no island ever holds more than one gold field, so the
+ * treasure is always worth more than one voyage.
  */
+
+/** Every board keeps its golds apart across two or three small islands. */
+const ARCHIPELAGO = {
+    islandCount: { min: 2, max: 3 },
+    onePerIsland: ['gold'] as TileTypeId[],
+} as const;
 
 /** The five terrain types that make up an ordinary resource spread. */
 const RESOURCE_TILES: TileTypeId[] = ['forest', 'pasture', 'field', 'hill', 'mountain'];
@@ -50,6 +60,7 @@ export const NEW_SHORES_THREE_PLAYER: BoardVariant = {
         mainland: THREE_PLAYER_MAINLAND,
         openSea: [2, 6, 11, 16, 18, 22, 25, 28, 31, 32, 33],
         smallIslandSeaCount: 4,
+        ...ARCHIPELAGO,
         // One of field/hill/mountain gets a third mainland tile; the other two
         // are pushed out to the small islands.
         mainlandTiles: ctx => [
@@ -139,6 +150,7 @@ export const NEW_SHORES_FOUR_PLAYER: BoardVariant = {
         openSea: [2, 7, 13, 19, 21, 26, 29, 33, 36, 37, 38, 39],
         smallIslands: [1, 6, 12, 20, 27, 28, 34, 35, 40, 41, 42, 43, 44],
         smallIslandSeaCount: 4,
+        ...ARCHIPELAGO,
         mainlandTiles: ctx => {
             const { mainland } = fourPlayerSplit(ctx);
             return [
@@ -193,8 +205,12 @@ export const NEW_SHORES_SIX_PLAYER: BoardVariant = {
     numberDistribution: { 2: 3, 3: 4, 4: 4, 5: 4, 6: 4, 8: 4, 9: 4, 10: 4, 11: 4, 12: 3 },
     layout: islandLayout({
         mainland: SIX_PLAYER_MAINLAND,
-        openSea: [2, 6, 9, 14, 17, 23, 25, 26, 33, 34, 36, 42, 45, 50, 53, 57],
-        smallIslandSeaCount: 2,
+        // The outer hexes of the middle row (25, 34) are left open so the two
+        // corners down each side can join up; with the corners walled off from
+        // each other the board could only ever make four islands, never three.
+        openSea: [2, 6, 9, 14, 17, 23, 26, 33, 36, 42, 45, 50, 53, 57],
+        smallIslandSeaCount: 4,
+        ...ARCHIPELAGO,
         mainlandTiles: () =>
             repeat<TileTypeId>([
                 ['desert', 2],

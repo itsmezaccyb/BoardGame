@@ -8,8 +8,13 @@
  * fog watching you decide where to build. Cobwebs and things with too many
  * legs are strung across the lot of it.
  *
- * Same approach as the other generated packs: gradients, silhouettes and
- * grain, deterministic, so re-running produces byte-identical files.
+ * Deliberately NOT lit like the Nights pack. Nothing here glows as a tube of
+ * light — `bloom`/`glowing` are additive and blow out to white, which reads as
+ * neon signage rather than as horror. Light in this pack is firelight, moon and
+ * wet gleam: `emberGlow` composites normally, so it stays dim and dirty. Solid
+ * shapes with hard black outlines do the rest of the work.
+ *
+ * Deterministic, so re-running produces byte-identical files.
  *
  *     node scripts/generate-halloween-pack.js
  *     npm run optimize-images     # refresh the manifest afterwards
@@ -19,7 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const { createCanvas } = require('canvas');
 const {
-    bloom, glowing, grain, portCorners, rgba, ridge, rng, vignette, wash,
+    grain, portCorners, rgba, ridge, rng, vignette, wash,
 } = require('./texture-kit');
 
 const OUT = path.join(__dirname, '..', 'public', 'images');
@@ -50,6 +55,130 @@ const ROT = {
 
 /** Not quite black — true black kills the grain. */
 const PITCH = '5, 4, 7';
+
+/**
+ * A close, dirty pool of light — a candle, a wet gleam, the moon behind cloud.
+ *
+ * Composites normally rather than additively. That is the whole difference
+ * between this pack and a neon one: additive light stacks to white and glares,
+ * this just lifts what is under it.
+ */
+function emberGlow(ctx, { x, y, radius, color, alpha }) {
+    const light = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    light.addColorStop(0, rgba(color, alpha));
+    light.addColorStop(0.45, rgba(color, alpha * 0.32));
+    light.addColorStop(1, rgba(color, 0));
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+/** Thrown blood. A main spatter and the droplets that carried past it. */
+function splatter(ctx, { x, y, size, count, random, color = ROT.blood, alpha = 0.8 }) {
+    ctx.fillStyle = rgba(color, alpha);
+    for (let i = 0; i < count; i++) {
+        const a = random() * Math.PI * 2;
+        const d = random() * size;
+        const r = size * (0.04 + random() * 0.16) * (1 - d / size / 1.4);
+        ctx.beginPath();
+        ctx.ellipse(x + Math.cos(a) * d, y + Math.sin(a) * d, r, r * (0.6 + random() * 0.7),
+            a, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+/** A skeletal hand, come up out of the ground. */
+function boneHand(ctx, { x, baseY, size, lean = 0, color = ROT.bone, alpha = 0.9 }) {
+    ctx.save();
+    ctx.translate(x, baseY);
+    ctx.rotate(lean);
+    ctx.strokeStyle = rgba(color, alpha);
+    ctx.lineCap = 'round';
+
+    ctx.lineWidth = size * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -size * 0.55);
+    ctx.stroke();
+
+    // Four fingers and a thumb, all cupped as if grasping.
+    ctx.lineWidth = size * 0.1;
+    [-0.62, -0.28, 0.06, 0.4].forEach((spread, i) => {
+        const len = size * (0.42 + (i === 1 || i === 2 ? 0.12 : 0));
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.52);
+        ctx.quadraticCurveTo(spread * size * 0.5, -size * 0.52 - len * 0.7,
+            spread * size * 0.85, -size * 0.5 - len);
+        ctx.stroke();
+    });
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.46);
+    ctx.quadraticCurveTo(-size * 0.42, -size * 0.5, -size * 0.5, -size * 0.76);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+/** A ribcage, half out of the ground. */
+function ribcage(ctx, { x, y, size, color = ROT.bone, alpha = 0.75 }) {
+    ctx.strokeStyle = rgba(color, alpha);
+    ctx.lineCap = 'round';
+    ctx.lineWidth = size * 0.06;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y - size * 0.5);
+    ctx.lineTo(x, y + size * 0.5);
+    ctx.stroke();
+
+    ctx.lineWidth = size * 0.05;
+    for (let i = 0; i < 5; i++) {
+        const ry = y - size * 0.38 + i * size * 0.2;
+        const reach = size * (0.46 - Math.abs(i - 1.6) * 0.05);
+        [-1, 1].forEach(side => {
+            ctx.beginPath();
+            ctx.moveTo(x, ry);
+            ctx.quadraticCurveTo(x + side * reach, ry + size * 0.04,
+                x + side * reach * 0.72, ry + size * 0.24);
+            ctx.stroke();
+        });
+    }
+}
+
+/** A bird on a branch, or circling. Pure silhouette. */
+function raven(ctx, { x, y, size, wings = false }) {
+    ctx.fillStyle = rgba(PITCH, 0.95);
+    if (wings) {
+        ctx.beginPath();
+        ctx.moveTo(x - size, y);
+        ctx.quadraticCurveTo(x - size * 0.5, y - size * 0.5, x, y - size * 0.08);
+        ctx.quadraticCurveTo(x + size * 0.5, y - size * 0.5, x + size, y);
+        ctx.quadraticCurveTo(x + size * 0.5, y - size * 0.16, x, y + size * 0.12);
+        ctx.quadraticCurveTo(x - size * 0.5, y - size * 0.16, x - size, y);
+        ctx.closePath();
+        ctx.fill();
+        return;
+    }
+    ctx.beginPath();
+    ctx.ellipse(x, y, size * 0.34, size * 0.5, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x - size * 0.2, y - size * 0.5, size * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x - size * 0.36, y - size * 0.54);
+    ctx.lineTo(x - size * 0.72, y - size * 0.46);
+    ctx.lineTo(x - size * 0.34, y - size * 0.38);
+    ctx.closePath();
+    ctx.fill();
+    // Tail.
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.16, y + size * 0.4);
+    ctx.lineTo(x + size * 0.66, y + size * 0.78);
+    ctx.lineTo(x + size * 0.08, y + size * 0.56);
+    ctx.closePath();
+    ctx.fill();
+}
 
 function tileCanvas() {
     const canvas = createCanvas(TILE, TILE);
@@ -158,17 +287,26 @@ function spider(ctx, { x, y, size, color = PITCH, alpha = 0.95 }) {
     ctx.fill();
 }
 
-/** A pair of eyes, open, at you. */
+/**
+ * A pair of eyes, open, at you.
+ *
+ * A tight dirty halo and a slit pupil — an animal catching what light there is,
+ * not two lamps. The slit is what stops them reading as glowing dots.
+ */
 function watchingEyes(ctx, { x, y, size, color, alpha = 0.9 }) {
     [-1, 1].forEach(side => {
         const ex = x + side * size * 0.95;
-        bloom(ctx, { x: ex, y, radius: size * 3, color, alpha: alpha * 0.45 });
-        glowing(ctx, { color, blur: 20, alpha }, () => {
-            ctx.beginPath();
-            ctx.ellipse(ex, y, size * 0.55, size * 0.33, 0, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(color, 0.95);
-            ctx.fill();
-        });
+        emberGlow(ctx, { x: ex, y, radius: size * 1.7, color, alpha: alpha * 0.3 });
+
+        ctx.beginPath();
+        ctx.ellipse(ex, y, size * 0.42, size * 0.27, 0, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(color, alpha);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(ex, y, size * 0.09, size * 0.21, 0, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(PITCH, 0.92);
+        ctx.fill();
     });
 }
 
@@ -251,7 +389,7 @@ function drip(ctx, { x, y, length, width, color }) {
 
 /** A carved pumpkin, lit from the inside. */
 function jackOLantern(ctx, { x, y, size }) {
-    bloom(ctx, { x, y, radius: size * 2.2, color: ROT.pumpkin, alpha: 0.5 });
+    emberGlow(ctx, { x, y, radius: size * 2.4, color: ROT.pumpkin, alpha: 0.4 });
 
     // Body: overlapping lobes so the outline is not a plain circle.
     ctx.fillStyle = 'rgba(96, 40, 8, 1)';
@@ -282,11 +420,14 @@ function jackOLantern(ctx, { x, y, size }) {
         ctx.closePath();
     };
 
-    glowing(ctx, { color: ROT.pumpkin, blur: 26, alpha: 0.95 }, () => {
-        face();
-        ctx.fillStyle = rgba(ROT.pumpkin, 0.95);
-        ctx.fill();
-    });
+    // Cut out to the candle behind it, with the light spilling onto the rind
+    // rather than radiating off the tile.
+    face();
+    ctx.fillStyle = 'rgba(255, 170, 60, 0.95)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(60, 22, 4, 0.9)';
+    ctx.lineWidth = size * 0.035;
+    ctx.stroke();
 }
 
 // ---------------------------------------------------------------------------
@@ -299,8 +440,8 @@ function drawForest() {
     const random = rng(31013);
 
     wash(ctx, size, '#16261F', '#020604');
-    bloom(ctx, { x: TILE * 0.68, y: TILE * 0.16, radius: TILE * 0.58, color: ROT.moon, alpha: 0.5 });
-    bloom(ctx, { x: TILE * 0.4, y: TILE * 0.7, radius: TILE * 0.5, color: ROT.slime, alpha: 0.16 });
+    emberGlow(ctx, { x: TILE * 0.68, y: TILE * 0.16, radius: TILE * 0.58, color: ROT.moon, alpha: 0.5 });
+    emberGlow(ctx, { x: TILE * 0.4, y: TILE * 0.7, radius: TILE * 0.5, color: ROT.slime, alpha: 0.16 });
 
     ctx.lineCap = 'round';
 
@@ -336,8 +477,28 @@ function drawForest() {
     watchingEyes(ctx, { x: TILE * 0.74, y: TILE * 0.76, size: 11, color: ROT.blood, alpha: 0.85 });
     watchingEyes(ctx, { x: TILE * 0.5, y: TILE * 0.86, size: 8, color: ROT.slime, alpha: 0.6 });
 
-    cobweb(ctx, { x: TILE * 0.02, y: TILE * 0.02, radius: TILE * 0.34, from: -0.1, to: 1.67, alpha: 0.2 });
-    spider(ctx, { x: TILE * 0.2, y: TILE * 0.2, size: 22 });
+    // Something was hanged here, and the birds came.
+    ctx.strokeStyle = rgba('44, 36, 24', 0.9);
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(TILE * 0.86, TILE * 0.3);
+    ctx.lineTo(TILE * 0.86, TILE * 0.46);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(TILE * 0.86, TILE * 0.5, TILE * 0.035, TILE * 0.045, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    raven(ctx, { x: TILE * 0.16, y: TILE * 0.42, size: 34 });
+    raven(ctx, { x: TILE * 0.62, y: TILE * 0.2, size: 22, wings: true });
+    raven(ctx, { x: TILE * 0.44, y: TILE * 0.14, size: 16, wings: true });
+
+    skull(ctx, { x: TILE * 0.62, y: TILE * 0.93, size: 56, color: ROT.bone, alpha: 0.7 });
+    boneHand(ctx, { x: TILE * 0.9, baseY: TILE * 0.97, size: 76, lean: 0.2, alpha: 0.65 });
+
+    cobweb(ctx, { x: TILE * 0.02, y: TILE * 0.02, radius: TILE * 0.4, from: -0.1, to: 1.67, alpha: 0.26 });
+    cobweb(ctx, { x: TILE * 0.98, y: TILE * 0.02, radius: TILE * 0.3, from: 1.48, to: 3.24, alpha: 0.2 });
+    spider(ctx, { x: TILE * 0.24, y: TILE * 0.24, size: 30 });
+    spider(ctx, { x: TILE * 0.8, y: TILE * 0.14, size: 16 });
 
     vignette(ctx, size, 0.68, PITCH);
     grain(ctx, size, 13, 7711);
@@ -350,7 +511,7 @@ function drawPasture() {
     const random = rng(80231);
 
     wash(ctx, size, '#2A2A1C', '#050503');
-    bloom(ctx, { x: TILE * 0.5, y: TILE * 0.12, radius: TILE * 0.5, color: ROT.moon, alpha: 0.2 });
+    emberGlow(ctx, { x: TILE * 0.5, y: TILE * 0.12, radius: TILE * 0.5, color: ROT.moon, alpha: 0.2 });
 
     const crests = [
         { baseline: TILE * 0.34, amplitude: 30, wavelength: 240, phase: 0.6, fill: 'rgba(46, 62, 40, 0.95)' },
@@ -394,12 +555,36 @@ function drawPasture() {
     });
 
     // Ground mist, sitting in the dips.
-    bloom(ctx, { x: TILE * 0.36, y: TILE * 0.66, radius: TILE * 0.34, color: ROT.moon, alpha: 0.14 });
-    bloom(ctx, { x: TILE * 0.74, y: TILE * 0.84, radius: TILE * 0.3, color: ROT.moon, alpha: 0.12 });
+    emberGlow(ctx, { x: TILE * 0.36, y: TILE * 0.66, radius: TILE * 0.34, color: ROT.moon, alpha: 0.14 });
+    emberGlow(ctx, { x: TILE * 0.74, y: TILE * 0.84, radius: TILE * 0.3, color: ROT.moon, alpha: 0.12 });
 
-    jackOLantern(ctx, { x: TILE * 0.74, y: TILE * 0.8, size: 96 });
-    skull(ctx, { x: TILE * 0.18, y: TILE * 0.9, size: 58, color: ROT.bone, alpha: 0.8 });
-    spider(ctx, { x: TILE * 0.86, y: TILE * 0.26, size: 19 });
+    // They are not staying down.
+    boneHand(ctx, { x: TILE * 0.34, baseY: TILE * 0.82, size: 92, lean: -0.16 });
+    boneHand(ctx, { x: TILE * 0.56, baseY: TILE * 0.95, size: 110, lean: 0.12 });
+    boneHand(ctx, { x: TILE * 0.08, baseY: TILE * 0.7, size: 62, lean: -0.3, alpha: 0.75 });
+
+    // Two crosses among the stones.
+    ctx.strokeStyle = 'rgba(30, 28, 22, 0.98)';
+    ctx.lineWidth = 13;
+    [[0.46, 0.5, 1], [0.9, 0.62, 0.8]].forEach(([cx, cy, scale]) => {
+        ctx.save();
+        ctx.translate(TILE * cx, TILE * cy);
+        ctx.rotate(scale > 0.9 ? 0.1 : -0.16);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -110 * scale);
+        ctx.moveTo(-38 * scale, -78 * scale);
+        ctx.lineTo(38 * scale, -78 * scale);
+        ctx.stroke();
+        ctx.restore();
+    });
+
+    jackOLantern(ctx, { x: TILE * 0.76, y: TILE * 0.82, size: 104 });
+    skull(ctx, { x: TILE * 0.16, y: TILE * 0.92, size: 62, color: ROT.bone, alpha: 0.82 });
+    skull(ctx, { x: TILE * 0.66, y: TILE * 0.66, size: 40, color: ROT.bone, alpha: 0.6 });
+    ribcage(ctx, { x: TILE * 0.9, y: TILE * 0.92, size: 100, alpha: 0.55 });
+    raven(ctx, { x: TILE * 0.46, y: TILE * 0.34, size: 26 });
+    spider(ctx, { x: TILE * 0.88, y: TILE * 0.22, size: 22 });
 
     vignette(ctx, size, 0.62, PITCH);
     grain(ctx, size, 12, 20304);
@@ -413,8 +598,8 @@ function drawField() {
 
     wash(ctx, size, '#241505', '#060301');
     // Blood moon, low and enormous, so the stalks read as silhouette.
-    bloom(ctx, { x: TILE * 0.5, y: TILE * 0.24, radius: TILE * 0.62, color: ROT.blood, alpha: 0.85 });
-    bloom(ctx, { x: TILE * 0.5, y: TILE * 0.22, radius: TILE * 0.26, color: ROT.pumpkin, alpha: 0.5 });
+    emberGlow(ctx, { x: TILE * 0.5, y: TILE * 0.24, radius: TILE * 0.62, color: ROT.blood, alpha: 0.85 });
+    emberGlow(ctx, { x: TILE * 0.5, y: TILE * 0.22, radius: TILE * 0.26, color: ROT.pumpkin, alpha: 0.5 });
 
     ctx.lineCap = 'round';
 
@@ -483,6 +668,16 @@ function drawField() {
 
     rows(22, 0.44, 0.95, 6);
 
+    // Crows on it, and blood up the stalks.
+    raven(ctx, { x: sx - 96, y: sy + 6, size: 30 });
+    raven(ctx, { x: sx + 104, y: sy - 4, size: 26 });
+    raven(ctx, { x: TILE * 0.2, y: TILE * 0.16, size: 20, wings: true });
+    raven(ctx, { x: TILE * 0.82, y: TILE * 0.2, size: 16, wings: true });
+
+    splatter(ctx, { x: sx - 20, y: TILE * 0.66, size: 150, count: 34, random });
+    splatter(ctx, { x: TILE * 0.2, y: TILE * 0.86, size: 110, count: 22, random });
+    boneHand(ctx, { x: TILE * 0.86, baseY: TILE * 0.98, size: 84, lean: 0.22, alpha: 0.7 });
+
     vignette(ctx, size, 0.66, PITCH);
     grain(ctx, size, 13, 91177);
     return canvas;
@@ -494,7 +689,7 @@ function drawMountain() {
     const random = rng(64422);
 
     wash(ctx, size, '#1A1D24', '#040507');
-    bloom(ctx, { x: TILE * 0.32, y: TILE * 0.16, radius: TILE * 0.5, color: ROT.moon, alpha: 0.24 });
+    emberGlow(ctx, { x: TILE * 0.32, y: TILE * 0.16, radius: TILE * 0.5, color: ROT.moon, alpha: 0.24 });
 
     const peaks = [
         { x: 0.22, base: 0.92, height: 0.56, width: 0.32, lit: '#3C4250', dark: '#151920' },
@@ -549,15 +744,26 @@ function drawMountain() {
 
     // Ribs and a skull half out of the scree.
     skull(ctx, { x: TILE * 0.7, y: TILE * 0.76, size: 130, color: ROT.bone, alpha: 0.9 });
-    ctx.strokeStyle = rgba(ROT.bone, 0.4);
-    ctx.lineWidth = 7;
-    for (let i = 0; i < 4; i++) {
-        const y = TILE * (0.88 + i * 0.03);
+    ribcage(ctx, { x: TILE * 0.2, y: TILE * 0.84, size: 190, alpha: 0.6 });
+    skull(ctx, { x: TILE * 0.44, y: TILE * 0.93, size: 56, color: ROT.bone, alpha: 0.6 });
+    boneHand(ctx, { x: TILE * 0.9, baseY: TILE * 0.99, size: 78, lean: 0.26, alpha: 0.7 });
+
+    // Bones wedged upright in the scree, and blood down the rock.
+    ctx.strokeStyle = rgba(ROT.bone, 0.5);
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 11;
+    [[0.56, 0.86, -0.3], [0.62, 0.9, 0.25]].forEach(([bx, by, tilt]) => {
+        ctx.save();
+        ctx.translate(TILE * bx, TILE * by);
+        ctx.rotate(tilt);
         ctx.beginPath();
-        ctx.moveTo(TILE * 0.16, y);
-        ctx.quadraticCurveTo(TILE * 0.26, y - 26, TILE * 0.36, y);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -90);
         ctx.stroke();
-    }
+        ctx.restore();
+    });
+
+    splatter(ctx, { x: TILE * 0.72, y: TILE * 0.62, size: 120, count: 24, random, alpha: 0.65 });
 
     vignette(ctx, size, 0.62, PITCH);
     grain(ctx, size, 13, 40119);
@@ -570,7 +776,7 @@ function drawHill() {
     const random = rng(12876);
 
     wash(ctx, size, '#231210', '#060202');
-    bloom(ctx, { x: TILE * 0.5, y: TILE * 0.5, radius: TILE * 0.56, color: ROT.gore, alpha: 0.28 });
+    emberGlow(ctx, { x: TILE * 0.5, y: TILE * 0.5, radius: TILE * 0.56, color: ROT.gore, alpha: 0.28 });
 
     const courses = 7;
     for (let row = 0; row < courses; row++) {
@@ -623,7 +829,26 @@ function drawHill() {
         ctx.stroke();
     }
 
-    cobweb(ctx, { x: TILE * 0.98, y: TILE * 0.02, radius: TILE * 0.3, from: 1.48, to: 3.24, alpha: 0.16 });
+    // Hand prints, going down.
+    for (let i = 0; i < 5; i++) {
+        const hx = TILE * (0.12 + random() * 0.76);
+        const hy = TILE * (0.2 + random() * 0.5);
+        ctx.fillStyle = rgba(ROT.gore, 0.55);
+        ctx.beginPath();
+        ctx.ellipse(hx, hy, 20, 26, 0, 0, Math.PI * 2);
+        ctx.fill();
+        for (let f = 0; f < 4; f++) {
+            ctx.beginPath();
+            ctx.ellipse(hx - 15 + f * 10, hy - 32, 5, 14, (f - 1.5) * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    splatter(ctx, { x: TILE * 0.3, y: TILE * 0.3, size: 190, count: 44, random });
+    splatter(ctx, { x: TILE * 0.78, y: TILE * 0.56, size: 150, count: 32, random });
+
+    cobweb(ctx, { x: TILE * 0.98, y: TILE * 0.02, radius: TILE * 0.32, from: 1.48, to: 3.24, alpha: 0.2 });
+    spider(ctx, { x: TILE * 0.8, y: TILE * 0.2, size: 26 });
 
     vignette(ctx, size, 0.64, PITCH);
     grain(ctx, size, 14, 66600);
@@ -636,7 +861,7 @@ function drawDesert() {
     const random = rng(70707);
 
     wash(ctx, size, '#2A2418', '#070604');
-    bloom(ctx, { x: TILE * 0.7, y: TILE * 0.16, radius: TILE * 0.5, color: ROT.moon, alpha: 0.2 });
+    emberGlow(ctx, { x: TILE * 0.7, y: TILE * 0.16, radius: TILE * 0.5, color: ROT.moon, alpha: 0.2 });
 
     const dunes = [
         { baseline: TILE * 0.36, amplitude: 34, wavelength: 320, phase: 1.4, fill: 'rgba(86, 74, 52, 0.95)' },
@@ -667,12 +892,20 @@ function drawDesert() {
     ctx.strokeStyle = rgba(ROT.bone, 0.5);
     ctx.lineWidth = 9;
     ctx.lineCap = 'round';
-    [[0.62, 0.78, 0.82, 0.7], [0.6, 0.86, 0.86, 0.82], [0.18, 0.9, 0.34, 0.94]].forEach(([x1, y1, x2, y2]) => {
+    [[0.62, 0.78, 0.82, 0.7], [0.6, 0.86, 0.86, 0.82], [0.18, 0.9, 0.34, 0.94],
+     [0.7, 0.9, 0.9, 0.86], [0.08, 0.74, 0.2, 0.8]].forEach(([x1, y1, x2, y2]) => {
         ctx.beginPath();
         ctx.moveTo(TILE * x1, TILE * y1);
         ctx.lineTo(TILE * x2, TILE * y2);
         ctx.stroke();
     });
+
+    // The rest of them.
+    ribcage(ctx, { x: TILE * 0.37, y: TILE * 0.86, size: 170, alpha: 0.65 });
+    skull(ctx, { x: TILE * 0.78, y: TILE * 0.5, size: 62, color: ROT.bone, alpha: 0.72 });
+    skull(ctx, { x: TILE * 0.12, y: TILE * 0.55, size: 44, color: ROT.bone, alpha: 0.6 });
+    boneHand(ctx, { x: TILE * 0.62, baseY: TILE * 0.98, size: 80, lean: -0.2, alpha: 0.7 });
+    raven(ctx, { x: TILE * 0.82, y: TILE * 0.22, size: 24, wings: true });
 
     vignette(ctx, size, 0.6, PITCH);
     grain(ctx, size, 13, 31813);
@@ -685,9 +918,9 @@ function drawGold() {
     const random = rng(13337);
 
     wash(ctx, size, '#2A2008', '#070501');
-    bloom(ctx, { x: TILE * 0.5, y: TILE * 0.5, radius: TILE * 0.6, color: ROT.pumpkin, alpha: 0.32 });
+    emberGlow(ctx, { x: TILE * 0.5, y: TILE * 0.5, radius: TILE * 0.6, color: ROT.pumpkin, alpha: 0.32 });
     // The curse on it — a sick green light under the gold.
-    bloom(ctx, { x: TILE * 0.38, y: TILE * 0.62, radius: TILE * 0.4, color: ROT.slime, alpha: 0.26 });
+    emberGlow(ctx, { x: TILE * 0.38, y: TILE * 0.62, radius: TILE * 0.4, color: ROT.slime, alpha: 0.26 });
 
     // Coins, piled up the tile.
     for (let i = 0; i < 130; i++) {
@@ -714,7 +947,14 @@ function drawGold() {
     skull(ctx, { x: TILE * 0.27, y: TILE * 0.6, size: 168, color: ROT.bone, alpha: 0.95 });
     watchingEyes(ctx, { x: TILE * 0.27, y: TILE * 0.59, size: 20, color: ROT.slime, alpha: 0.85 });
 
-    spider(ctx, { x: TILE * 0.78, y: TILE * 0.78, size: 32 });
+    // Still reaching for it.
+    boneHand(ctx, { x: TILE * 0.72, baseY: TILE * 0.96, size: 130, lean: -0.28 });
+    skull(ctx, { x: TILE * 0.84, y: TILE * 0.32, size: 62, color: ROT.bone, alpha: 0.8 });
+    skull(ctx, { x: TILE * 0.12, y: TILE * 0.9, size: 46, color: ROT.bone, alpha: 0.65 });
+    splatter(ctx, { x: TILE * 0.34, y: TILE * 0.82, size: 150, count: 30, random, alpha: 0.7 });
+
+    cobweb(ctx, { x: TILE * 0.02, y: TILE * 0.02, radius: TILE * 0.3, from: -0.1, to: 1.67, alpha: 0.2 });
+    spider(ctx, { x: TILE * 0.8, y: TILE * 0.74, size: 34 });
 
     vignette(ctx, size, 0.58, PITCH);
     grain(ctx, size, 11, 24680);
@@ -743,7 +983,7 @@ function drawFog() {
 
     for (let i = 0; i < 26; i++) {
         const progress = i / 26;
-        bloom(ctx, {
+        emberGlow(ctx, {
             x: TILE * (0.08 + random() * 0.84),
             y: TILE * (0.12 + random() * 0.78),
             radius: TILE * (0.44 - progress * 0.26) * (0.7 + random() * 0.6),
@@ -752,9 +992,12 @@ function drawFog() {
         });
     }
 
-    watchingEyes(ctx, { x: TILE * 0.5, y: TILE * 0.35, size: 15, color: ROT.blood, alpha: 0.8 });
-    watchingEyes(ctx, { x: TILE * 0.18, y: TILE * 0.6, size: 10, color: ROT.slime, alpha: 0.55 });
-    watchingEyes(ctx, { x: TILE * 0.82, y: TILE * 0.5, size: 9, color: ROT.slime, alpha: 0.45 });
+    watchingEyes(ctx, { x: TILE * 0.5, y: TILE * 0.35, size: 17, color: ROT.blood, alpha: 0.85 });
+    watchingEyes(ctx, { x: TILE * 0.16, y: TILE * 0.62, size: 11, color: ROT.slime, alpha: 0.6 });
+    watchingEyes(ctx, { x: TILE * 0.84, y: TILE * 0.5, size: 10, color: ROT.slime, alpha: 0.5 });
+    watchingEyes(ctx, { x: TILE * 0.3, y: TILE * 0.86, size: 8, color: ROT.blood, alpha: 0.45 });
+    watchingEyes(ctx, { x: TILE * 0.72, y: TILE * 0.8, size: 7, color: ROT.slime, alpha: 0.4 });
+    watchingEyes(ctx, { x: TILE * 0.9, y: TILE * 0.24, size: 6, color: ROT.slime, alpha: 0.32 });
 
     vignette(ctx, size, 0.56, PITCH);
     grain(ctx, size, 12, 45454);
@@ -771,15 +1014,15 @@ function drawWater() {
     wash(ctx, size, '#0C0E0C', '#020302');
 
     const moon = { x: 0.72, y: 0.2 };
-    bloom(ctx, {
+    emberGlow(ctx, {
         x: size.width * moon.x, y: size.height * moon.y,
         radius: size.width * 0.3, color: ROT.blood, alpha: 0.42,
     });
-    bloom(ctx, {
+    emberGlow(ctx, {
         x: size.width * moon.x, y: size.height * moon.y,
         radius: size.width * 0.08, color: ROT.pumpkin, alpha: 0.5,
     });
-    bloom(ctx, {
+    emberGlow(ctx, {
         x: size.width * 0.2, y: size.height * 0.7,
         radius: size.width * 0.34, color: ROT.slime, alpha: 0.1,
     });
@@ -808,7 +1051,7 @@ function drawWater() {
 
     // Mist lying on the surface.
     for (let i = 0; i < 26; i++) {
-        bloom(ctx, {
+        emberGlow(ctx, {
             x: size.width * random(),
             y: size.height * (0.3 + random() * 0.7),
             radius: size.width * (0.06 + random() * 0.13),
@@ -856,20 +1099,29 @@ function drawBoat() {
     ];
 
     corners.forEach((corner, i) => {
-        glowing(ctx, { color: ROT.blood, blur: 18, alpha: 0.5 }, () => {
-            ctx.beginPath();
-            ctx.moveTo(hullTips[i].x, hullTips[i].y);
-            ctx.lineTo(corner.x, corner.y);
-            ctx.strokeStyle = rgba(ROT.blood, 0.55);
-            ctx.lineWidth = 6;
-            ctx.stroke();
-        });
-        glowing(ctx, { color: ROT.bone, blur: 22, alpha: 0.85 }, () => {
-            ctx.beginPath();
-            ctx.arc(corner.x, corner.y, 11, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(ROT.bone, 0.85);
-            ctx.fill();
-        });
+        // Rope, not light. Dark, frayed, with a bone peg driven into the corner.
+        ctx.strokeStyle = rgba('58, 16, 14', 0.95);
+        ctx.lineWidth = 9;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(hullTips[i].x, hullTips[i].y);
+        ctx.lineTo(corner.x, corner.y);
+        ctx.stroke();
+
+        ctx.strokeStyle = rgba(ROT.blood, 0.9);
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(hullTips[i].x, hullTips[i].y);
+        ctx.lineTo(corner.x, corner.y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(corner.x, corner.y, 13, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(ROT.bone, 0.95);
+        ctx.fill();
+        ctx.strokeStyle = rgba(PITCH, 0.9);
+        ctx.lineWidth = 3;
+        ctx.stroke();
     });
 
     // Same trick as the other packs: the image's lower half is the one facing
@@ -879,7 +1131,7 @@ function drawBoat() {
     ctx.rotate(Math.PI);
     ctx.scale(0.5, 0.48);
 
-    bloom(ctx, { x: 50 * unit, y: 70 * unit, radius: 44 * unit, color: ROT.slime, alpha: 0.13 });
+    emberGlow(ctx, { x: 50 * unit, y: 74 * unit, radius: 40 * unit, color: ROT.gore, alpha: 0.3 });
 
     // Sail, torn along the foot.
     const sail = () => {
@@ -903,12 +1155,24 @@ function drawBoat() {
     ctx.fillStyle = cloth;
     ctx.fill();
 
-    glowing(ctx, { color: ROT.bone, blur: 20, alpha: 0.5 }, () => {
-        sail();
-        ctx.strokeStyle = rgba(ROT.bone, 0.45);
-        ctx.lineWidth = 2.2 * unit;
-        ctx.stroke();
+    sail();
+    ctx.strokeStyle = rgba(PITCH, 0.9);
+    ctx.lineWidth = 3.2 * unit;
+    ctx.stroke();
+    sail();
+    ctx.strokeStyle = rgba(ROT.bone, 0.5);
+    ctx.lineWidth = 1.4 * unit;
+    ctx.stroke();
+
+    // Holes rotted through the cloth.
+    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+    ctx.globalCompositeOperation = 'destination-out';
+    [[54, 30, 4], [58, 44, 5.5], [47, 50, 3.5]].forEach(([hx, hy, hr]) => {
+        ctx.beginPath();
+        ctx.arc(hx * unit, hy * unit, hr * unit, 0, Math.PI * 2);
+        ctx.fill();
     });
+    ctx.globalCompositeOperation = 'source-over';
 
     // Mast.
     ctx.beginPath();
@@ -933,14 +1197,28 @@ function drawBoat() {
     ctx.fillStyle = timber;
     ctx.fill();
 
-    // Bone, not lime: the ship is a wreck still sailing, and the only colour
-    // on it should be the rope.
-    glowing(ctx, { color: ROT.slime, blur: 20, alpha: 0.26 }, () => {
-        hull();
-        ctx.strokeStyle = rgba(ROT.bone, 0.6);
-        ctx.lineWidth = 2.2 * unit;
+    // A wreck still sailing: hard black outline, pale bone strake, planks.
+    hull();
+    ctx.strokeStyle = rgba(PITCH, 0.95);
+    ctx.lineWidth = 3.4 * unit;
+    ctx.stroke();
+    hull();
+    ctx.strokeStyle = rgba(ROT.bone, 0.55);
+    ctx.lineWidth = 1.5 * unit;
+    ctx.stroke();
+
+    ctx.strokeStyle = rgba(PITCH, 0.6);
+    ctx.lineWidth = 1.1 * unit;
+    for (let i = 1; i < 5; i++) {
+        const px = (26 + i * 10) * unit;
+        ctx.beginPath();
+        ctx.moveTo(px, 66 * unit);
+        ctx.lineTo(px, 78 * unit);
         ctx.stroke();
-    });
+    }
+
+    // A skull lashed to the bow, because why not.
+    skull(ctx, { x: 26 * unit, y: 58 * unit, size: 15 * unit, color: ROT.bone, alpha: 0.95 });
 
     ctx.restore();
     return canvas;
@@ -1079,15 +1357,20 @@ function drawGlyph(name) {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    glowing(ctx, { color, blur: 30, alpha: 0.7 }, () => {
-        ctx.strokeStyle = rgba(color, 0.5);
-        ctx.lineWidth = 7 * u;
-        draw(ctx, u);
-    });
-
-    ctx.strokeStyle = rgba(ROT.bone, 0.95);
-    ctx.lineWidth = 2.6 * u;
+    // Heavy black outline under a solid stroke — a mark daubed on the sail,
+    // not a lit tube. Then blood flicked over the top of it.
+    ctx.strokeStyle = rgba(PITCH, 0.95);
+    ctx.lineWidth = 11 * u;
     draw(ctx, u);
+
+    ctx.strokeStyle = rgba(color, 1);
+    ctx.lineWidth = 5.5 * u;
+    draw(ctx, u);
+
+    splatter(ctx, {
+        x: 56 * u, y: 60 * u, size: 30 * u, count: 14,
+        random: rng(name.length * 9161), alpha: 0.75,
+    });
 
     return canvas;
 }

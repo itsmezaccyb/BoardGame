@@ -41,49 +41,56 @@ function resourcePort(
     label: string,
     resource: ResourceType,
     art: string,
-    logo: string,
-    nightsLogo: string
+    logo: Partial<Record<TileStyleId, string>>
 ): PortType {
-    return {
-        id,
-        label,
-        ratio: 2,
-        resource,
-        art: { classic: art },
-        logo: { simple: logo, nights: nightsLogo },
-    };
+    return { id, label, ratio: 2, resource, art: { classic: art }, logo };
 }
 
 export const PORT_TYPES: Record<PortTypeId, PortType> = {
     'brick_2-1': resourcePort(
         'brick_2-1', 'Brick 2:1', 'brick',
         '/images/catan_boat_brick_2-1.png',
-        '/images/catan_brick_logo_style.png',
-        '/images/catan_brick_logo_nights.png'
+        {
+            simple: '/images/catan_brick_logo_style.png',
+            nights: '/images/catan_brick_logo_nights.png',
+            halloween: '/images/catan_brick_logo_halloween.png',
+        }
     ),
     'sheep_2-1': resourcePort(
         'sheep_2-1', 'Sheep 2:1', 'sheep',
         '/images/catan_boat_sheep_2-1.png',
-        '/images/catan_sheep_logo_stle.png',
-        '/images/catan_sheep_logo_nights.png'
+        {
+            simple: '/images/catan_sheep_logo_stle.png',
+            nights: '/images/catan_sheep_logo_nights.png',
+            halloween: '/images/catan_sheep_logo_halloween.png',
+        }
     ),
     'rock_2-1': resourcePort(
         'rock_2-1', 'Ore 2:1', 'ore',
         '/images/catan_boat_rock_2-1.png',
-        '/images/catan_rock_logo_style.png',
-        '/images/catan_rock_logo_nights.png'
+        {
+            simple: '/images/catan_rock_logo_style.png',
+            nights: '/images/catan_rock_logo_nights.png',
+            halloween: '/images/catan_rock_logo_halloween.png',
+        }
     ),
     'wood_2-1': resourcePort(
         'wood_2-1', 'Wood 2:1', 'wood',
         '/images/catan_boat_wood_2-1.png',
-        '/images/catan_wood_logo_style.png',
-        '/images/catan_wood_logo_nights.png'
+        {
+            simple: '/images/catan_wood_logo_style.png',
+            nights: '/images/catan_wood_logo_nights.png',
+            halloween: '/images/catan_wood_logo_halloween.png',
+        }
     ),
     'wheat_2-1': resourcePort(
         'wheat_2-1', 'Wheat 2:1', 'wheat',
         '/images/catan_boat_wheat_2-1.png',
-        '/images/catan_wheat_logo_style.png',
-        '/images/catan_wheat_logo_nights.png'
+        {
+            simple: '/images/catan_wheat_logo_style.png',
+            nights: '/images/catan_wheat_logo_nights.png',
+            halloween: '/images/catan_wheat_logo_halloween.png',
+        }
     ),
     'generic_3-1': {
         id: 'generic_3-1',
@@ -93,6 +100,7 @@ export const PORT_TYPES: Record<PortTypeId, PortType> = {
         logo: {
             simple: '/images/catan_generic_logo.png',
             nights: '/images/catan_generic_logo_nights.png',
+            halloween: '/images/catan_generic_logo_halloween.png',
         },
         // The Simple boat's icon is a small badge; the Nights compass is drawn
         // to sit on the sail like the other glyphs.

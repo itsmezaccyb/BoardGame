@@ -65,6 +65,14 @@ the settings panel is generated from the registry, so it appears automatically.
 A style controls the page background, hex borders, water outlines, the stroke
 layers used for each coastline weight, and how port boats are drawn.
 
+Two of the styles ship as code rather than as image files. `Dangerous Nights`
+and `All Hallows` are drawn by `scripts/generate-*-pack.js` on top of the shared
+helpers in `scripts/texture-kit.js` — gradients, silhouettes and grain, seeded
+so a re-run is byte-identical. To change how one looks, edit its palette or a
+motif and re-run the script, then `npm run optimize-images`. Both derive their
+port mooring lines from the style's `sizeFactor` via `portCorners`, so those two
+numbers have to be changed together.
+
 ---
 
 ## Add a new game mode (scenario / expansion)

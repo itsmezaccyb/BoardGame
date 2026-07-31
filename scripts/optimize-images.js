@@ -40,8 +40,8 @@ const SIZE_RULES = [
     // Legend icons are only drawn at ~58px, but downscaling in two steps
     // (source -> file -> screen) softens detail, so keep plenty of headroom.
     // At this size they are a few tens of KB either way.
-    { match: /_logo(_style|_stle|_nights)?\.(png|jpg|jpeg)$/i, maxDimension: 384 },
-    { match: /catan_water(_style|_nights)?\.(png|jpg|jpeg)$/i, maxDimension: 1920 }, // full-page background
+    { match: /_logo(_style|_stle|_nights|_halloween)?\.(png|jpg|jpeg)$/i, maxDimension: 384 },
+    { match: /catan_water(_style|_nights|_halloween)?\.(png|jpg|jpeg)$/i, maxDimension: 1920 }, // full-page background
     { match: /catan_boat/i, maxDimension: 768 },                             // port boats, ~419px
     { match: /./, maxDimension: 768 },                                       // hex tiles, ~345px
 ];

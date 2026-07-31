@@ -39,6 +39,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             classic: '/images/catan_woods.png',
             simple: '/images/catan_wood_style.jpg',
             nights: '/images/catan_woods_nights.png',
+            halloween: '/images/catan_woods_halloween.png',
         },
     },
     pasture: {
@@ -51,6 +52,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             classic: '/images/catan_sheep.png',
             simple: '/images/catan_sheep_style.jpg',
             nights: '/images/catan_sheep_nights.png',
+            halloween: '/images/catan_sheep_halloween.png',
         },
     },
     field: {
@@ -63,6 +65,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             classic: '/images/catan_wheat.png',
             simple: '/images/catan_wheat_style.jpg',
             nights: '/images/catan_wheat_nights.png',
+            halloween: '/images/catan_wheat_halloween.png',
         },
     },
     mountain: {
@@ -75,6 +78,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             classic: '/images/catan_rock.png',
             simple: '/images/catan_rock_style.jpg',
             nights: '/images/catan_rock_nights.png',
+            halloween: '/images/catan_rock_halloween.png',
         },
     },
     hill: {
@@ -87,6 +91,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             classic: '/images/catan_brick.png',
             simple: '/images/catan_brick_style.jpg',
             nights: '/images/catan_brick_nights.png',
+            halloween: '/images/catan_brick_halloween.png',
         },
     },
     gold: {
@@ -98,6 +103,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             classic: '/images/catan_gold.jpg',
             simple: '/images/catan_gold_style.png',
             nights: '/images/catan_gold_nights.png',
+            halloween: '/images/catan_gold_halloween.png',
         },
     },
     desert: {
@@ -109,6 +115,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             classic: '/images/catan_desert.png',
             simple: '/images/catan_desert_style.jpg',
             nights: '/images/catan_desert_nights.png',
+            halloween: '/images/catan_desert_halloween.png',
         },
     },
     fog: {
@@ -123,6 +130,7 @@ export const TILE_TYPES: Record<TileTypeId, TileType> = {
             classic: '/images/catan_fog.png',
             simple: '/images/catan_fog_style.png',
             nights: '/images/catan_fog_nights.png',
+            halloween: '/images/catan_fog_halloween.png',
         },
     },
     water: {

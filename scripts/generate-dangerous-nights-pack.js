@@ -16,6 +16,9 @@
 const fs = require('fs');
 const path = require('path');
 const { createCanvas } = require('canvas');
+const {
+    bloom, glowing, grain, portCorners, rgba, ridge, ridgeLight, rng, vignette, wash,
+} = require('./texture-kit');
 
 const OUT = path.join(__dirname, '..', 'public', 'images');
 
@@ -46,120 +49,6 @@ const INK = '10, 6, 18';
 // ---------------------------------------------------------------------------
 // Drawing helpers
 // ---------------------------------------------------------------------------
-
-/** Small deterministic PRNG so every run draws the same pack. */
-function rng(seed) {
-    let state = seed >>> 0;
-    return () => {
-        state = (state * 1664525 + 1013904223) % 4294967296;
-        return state / 4294967296;
-    };
-}
-
-function rgba(color, alpha) {
-    return `rgba(${color}, ${alpha})`;
-}
-
-/** Vertical base wash — every tile starts as night. */
-function wash(ctx, size, top, bottom) {
-    const gradient = ctx.createLinearGradient(0, 0, 0, size.height);
-    gradient.addColorStop(0, top);
-    gradient.addColorStop(1, bottom);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size.width, size.height);
-}
-
-/** A soft pool of coloured light. Additive, so pools overlap into brighter cores. */
-function bloom(ctx, { x, y, radius, color, alpha }) {
-    const previous = ctx.globalCompositeOperation;
-    ctx.globalCompositeOperation = 'lighter';
-
-    const light = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    light.addColorStop(0, rgba(color, alpha));
-    light.addColorStop(0.45, rgba(color, alpha * 0.35));
-    light.addColorStop(1, rgba(color, 0));
-
-    ctx.fillStyle = light;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.globalCompositeOperation = previous;
-}
-
-/** Runs `draw` with a neon glow around whatever it paints. */
-function glowing(ctx, { color, blur, alpha = 1, additive = true }, draw) {
-    ctx.save();
-    if (additive) ctx.globalCompositeOperation = 'lighter';
-    ctx.shadowColor = rgba(color, alpha);
-    ctx.shadowBlur = blur;
-    draw();
-    // A second pass over the same path deepens the glow into a proper bloom.
-    draw();
-    ctx.restore();
-}
-
-/** Film grain. Keeps the flat gradients from banding on a big screen. */
-function grain(ctx, size, strength, seed) {
-    const image = ctx.getImageData(0, 0, size.width, size.height);
-    const { data } = image;
-    const random = rng(seed);
-
-    for (let i = 0; i < data.length; i += 4) {
-        const noise = (random() - 0.5) * strength;
-        data[i] = clamp(data[i] + noise);
-        data[i + 1] = clamp(data[i + 1] + noise);
-        data[i + 2] = clamp(data[i + 2] + noise);
-    }
-
-    ctx.putImageData(image, 0, 0);
-}
-
-function clamp(value) {
-    return value < 0 ? 0 : value > 255 ? 255 : value;
-}
-
-/** Darkens the edges so the lit middle is where the eye lands. */
-function vignette(ctx, size, strength = 0.55) {
-    const edge = ctx.createRadialGradient(
-        size.width / 2, size.height / 2, Math.min(size.width, size.height) * 0.26,
-        size.width / 2, size.height / 2, Math.max(size.width, size.height) * 0.72
-    );
-    edge.addColorStop(0, rgba(INK, 0));
-    edge.addColorStop(1, rgba(INK, strength));
-    ctx.fillStyle = edge;
-    ctx.fillRect(0, 0, size.width, size.height);
-}
-
-/** A filled band following a sine ridge — the basis of the rolling terrain. */
-function ridge(ctx, size, { baseline, amplitude, wavelength, phase, fill }) {
-    ctx.beginPath();
-    ctx.moveTo(0, size.height);
-    for (let x = 0; x <= size.width; x += 4) {
-        const y = baseline + Math.sin((x / wavelength) + phase) * amplitude;
-        ctx.lineTo(x, y);
-    }
-    ctx.lineTo(size.width, size.height);
-    ctx.closePath();
-    ctx.fillStyle = fill;
-    ctx.fill();
-}
-
-/** The lit crest of a ridge, traced as a glowing line. */
-function ridgeLight(ctx, size, { baseline, amplitude, wavelength, phase, color, width, blur }) {
-    const trace = () => {
-        ctx.beginPath();
-        for (let x = 0; x <= size.width; x += 4) {
-            const y = baseline + Math.sin((x / wavelength) + phase) * amplitude;
-            if (x === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = rgba(color, 0.5);
-        ctx.lineWidth = width;
-        ctx.stroke();
-    };
-    glowing(ctx, { color, blur }, trace);
-}
 
 function tileCanvas() {
     const canvas = createCanvas(TILE, TILE);
@@ -227,7 +116,7 @@ function drawForest() {
     // Mist pooling at the foot of the stand.
     bloom(ctx, { x: TILE * 0.55, y: TILE * 0.86, radius: TILE * 0.36, color: NEON.violet, alpha: 0.2 });
 
-    vignette(ctx, size, 0.5);
+    vignette(ctx, size, 0.5, INK);
     grain(ctx, size, 12, 5150);
     return canvas;
 }
@@ -280,7 +169,7 @@ function drawPasture() {
         bloom(ctx, { x, y, radius: 5 + random() * 13, color: NEON.mint, alpha: 0.5 + random() * 0.45 });
     }
 
-    vignette(ctx, size, 0.48);
+    vignette(ctx, size, 0.48, INK);
     grain(ctx, size, 11, 66123);
     return canvas;
 }
@@ -333,7 +222,7 @@ function drawField() {
         });
     }
 
-    vignette(ctx, size, 0.6);
+    vignette(ctx, size, 0.6, INK);
     grain(ctx, size, 12, 20993);
     return canvas;
 }
@@ -415,7 +304,7 @@ function drawMountain() {
         }
     });
 
-    vignette(ctx, size, 0.5);
+    vignette(ctx, size, 0.5, INK);
     grain(ctx, size, 13, 44011);
     return canvas;
 }
@@ -461,7 +350,7 @@ function drawHill() {
     bloom(ctx, { x: TILE * 0.42, y: TILE * 0.8, radius: TILE * 0.4, color: NEON.ember, alpha: 0.2 });
     bloom(ctx, { x: TILE * 0.7, y: TILE * 0.3, radius: TILE * 0.3, color: NEON.magenta, alpha: 0.12 });
 
-    vignette(ctx, size, 0.6);
+    vignette(ctx, size, 0.6, INK);
     grain(ctx, size, 14, 78222);
     return canvas;
 }
@@ -502,7 +391,7 @@ function drawDesert() {
         ctx.stroke();
     }
 
-    vignette(ctx, size, 0.58);
+    vignette(ctx, size, 0.58, INK);
     grain(ctx, size, 13, 31415);
     return canvas;
 }
@@ -656,7 +545,7 @@ function drawGold() {
     drawFigure(ctx, { figure: FIGURES.standing, x: 0.04, y: 0.16, scale: 0.56, color: NEON.magenta });
     drawFigure(ctx, { figure: FIGURES.seated, x: 0.44, y: 0.4, scale: 0.54, color: NEON.cyan });
 
-    vignette(ctx, size, 0.5);
+    vignette(ctx, size, 0.5, INK);
     grain(ctx, size, 10, 13579);
     return canvas;
 }
@@ -682,7 +571,7 @@ function drawFog() {
 
     bloom(ctx, { x: TILE * 0.5, y: TILE * 0.44, radius: TILE * 0.5, color: NEON.violet, alpha: 0.22 });
 
-    vignette(ctx, size, 0.5);
+    vignette(ctx, size, 0.5, INK);
     grain(ctx, size, 12, 24242);
     return canvas;
 }
@@ -741,7 +630,7 @@ function drawWater() {
         ctx.restore();
     }
 
-    vignette(ctx, size, 0.7);
+    vignette(ctx, size, 0.7, INK);
     grain(ctx, size, 9, 55555);
     return canvas;
 }
@@ -754,19 +643,8 @@ function drawWater() {
  * The harbour boat: a low black hull with light under the waterline and a
  * dark sail. The sail is left clear — the resource glyph is stamped onto it.
  */
-/**
- * How far either side of centre the two corners of the hex side fall, as a
- * fraction of the boat image.
- *
- * A port is centred on a hex side and rotated so that side runs horizontally
- * through the middle of the image — which means both of its corners sit on the
- * image's horizontal centre line. The hexagon is regular, so each side is
- * 0.5774 hex-widths long, and the image is drawn `PORT_SIZE_FACTOR` hex-widths
- * across. Keep that in step with `sizeFactor` for `nights` in styles.ts.
- */
+/** Must match `sizeFactor` for `nights` in styles.ts — see `portCorners`. */
 const PORT_SIZE_FACTOR = 1.66;
-const HEX_SIDE_OVER_WIDTH = 0.5774;
-const CORNER_OFFSET = HEX_SIDE_OVER_WIDTH / PORT_SIZE_FACTOR / 2;
 
 function drawBoat() {
     const canvas = createCanvas(BOAT, BOAT);
@@ -777,10 +655,7 @@ function drawBoat() {
     // moored against — the two spots that can actually trade through it. The
     // Classic boats do this with painted planks; here they are lit rope, with a
     // bright node on each corner so there is no guessing which two they are.
-    const corners = [
-        { x: BOAT * (0.5 - CORNER_OFFSET), y: BOAT * 0.5 },
-        { x: BOAT * (0.5 + CORNER_OFFSET), y: BOAT * 0.5 },
-    ];
+    const corners = portCorners(BOAT, PORT_SIZE_FACTOR);
     // Where the hull ends up once the transform below has been applied.
     const hullTips = [
         { x: BOAT * 0.34, y: BOAT * 0.72 },

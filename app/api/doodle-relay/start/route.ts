@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db as supabase } from '@/lib/doodle/db';
 import { MIN_PLAYERS, TIMER_OPTIONS, pickPrompts, totalRounds } from '@/lib/doodle/game';
-import { PROMPTS } from '@/lib/doodle/prompts';
+import { promptsFor } from '@/lib/doodle/prompts';
 import { ApiError, handle, loadPlayers, loadSession, requireLeader } from '@/lib/doodle/server';
 
 export const dynamic = 'force-dynamic';
 
-// POST /api/doodle-relay/start  { code, token, timerSeconds }
+// POST /api/doodle-relay/start  { code, token, timerSeconds, categories }
+// categories: ids from lib/doodle/prompts; missing or empty means all of them.
 // Starts a game from the lobby, or a new game after a reveal.
 export async function POST(request: NextRequest) {
   return handle(async () => {
-    const { code, token, timerSeconds } = await request.json();
+    const { code, token, timerSeconds, categories } = await request.json();
     const session = await loadSession(code);
     const players = await loadPlayers(session.id);
     requireLeader(players, token);
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     const timer = (TIMER_OPTIONS as readonly number[]).includes(timerSeconds) ? timerSeconds : session.timer_seconds;
     const gameNumber = session.game_number + 1;
     const seatOrder = players.map((p) => p.id);
-    const prompts = pickPrompts(PROMPTS, seatOrder.length);
+    const prompts = pickPrompts(promptsFor(Array.isArray(categories) ? categories : undefined), seatOrder.length);
 
     // Write the prompts before flipping the session to playing, so no one
     // ever sees a round without its starting words.

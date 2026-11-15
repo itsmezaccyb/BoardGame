@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MIN_PLAYERS, NO_GUESS, TIMER_OPTIONS, type StateResponse, type Task } from '@/lib/doodle/game';
+import { ALL_CATEGORY_IDS, CATEGORIES } from '@/lib/doodle/prompts';
 import { DrawingCanvas, type DrawingCanvasHandle } from './DrawingCanvas';
 import { RevealViewer } from './RevealViewer';
-import { api, storageGet, storageSet, tokenKey, useCountdown, useDoodleState, useDrawing } from './useDoodle';
+import { CATEGORIES_KEY, api, storageGet, storageSet, tokenKey, useCountdown, useDoodleState, useDrawing } from './useDoodle';
 
 function Shell({ children, wide, fit }: { children: React.ReactNode; wide?: boolean; fit?: boolean }) {
   // `fit` locks the page to the screen height so the drawing pad shrinks to
@@ -32,6 +33,42 @@ function TimerPicker({ value, onChange }: { value: number; onChange: (v: number)
             {t === 0 ? 'Off' : `${t}s`}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function CategoryPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const allOn = value.length === ALL_CATEGORY_IDS.length;
+  const toggle = (id: string) => {
+    const next = value.includes(id) ? value.filter((v) => v !== id) : [...value, id];
+    if (next.length) onChange(next); // keep at least one category picked
+  };
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-2">
+        <p className="text-sm font-semibold text-gray-700">Word categories</p>
+        <button type="button" onClick={() => onChange(allOn ? [ALL_CATEGORY_IDS[0]] : [...ALL_CATEGORY_IDS])} className="text-sm text-violet-700 font-semibold">
+          {allOn ? 'Clear' : 'Pick all'}
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {CATEGORIES.map((c) => {
+          const on = value.includes(c.id);
+          return (
+            <button
+              key={c.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggle(c.id)}
+              className={`px-3 py-2 rounded-full text-sm font-semibold border-2 transition-colors ${
+                on ? 'border-violet-600 bg-violet-600 text-white' : 'border-gray-200 bg-white text-gray-600'
+              }`}
+            >
+              {c.emoji} {c.name}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -173,6 +210,22 @@ export function DoodlePlayer() {
   const [token, setToken] = useState<string | null>(null);
   const [checkedToken, setCheckedToken] = useState(false);
   const [timer, setTimer] = useState<number | null>(null);
+  const [categories, setCategoriesState] = useState<string[]>(ALL_CATEGORY_IDS);
+  const setCategories = (ids: string[]) => {
+    setCategoriesState(ids);
+    storageSet(CATEGORIES_KEY, JSON.stringify(ids));
+  };
+
+  // Remember the leader's last category picks between games
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(storageGet(CATEGORIES_KEY) || 'null');
+      const valid = Array.isArray(saved) ? saved.filter((id) => ALL_CATEGORY_IDS.includes(id)) : [];
+      if (valid.length) setCategoriesState(valid);
+    } catch {
+      /* ignore bad saved value */
+    }
+  }, []);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -237,7 +290,7 @@ export function DoodlePlayer() {
 
   const leader = state.players.find((p) => p.isLeader);
   const chosenTimer = timer ?? state.timerSeconds;
-  const startGame = () => run(() => api('start', { code, token, timerSeconds: chosenTimer }));
+  const startGame = () => run(() => api('start', { code, token, timerSeconds: chosenTimer, categories }));
   const leave = () =>
     run(async () => {
       if (!confirm('Leave this game?')) return;
@@ -274,14 +327,15 @@ export function DoodlePlayer() {
             <p className="text-xs text-gray-500 mt-2">Sketchbooks pass in this order, so it helps to join in the order you&rsquo;re sitting.</p>
           </div>
           {me.isLeader ? (
-            <div className="flex flex-col gap-4 mt-auto">
+            <div className="flex flex-col gap-5 mt-auto">
+              <CategoryPicker value={categories} onChange={setCategories} />
               <TimerPicker value={chosenTimer} onChange={setTimer} />
               <button onClick={startGame} disabled={!enough || busy} className="w-full py-4 rounded-2xl bg-green-600 text-white font-bold text-xl disabled:opacity-40">
                 {enough ? 'Start game' : `Need ${MIN_PLAYERS - state.players.length} more player${MIN_PLAYERS - state.players.length === 1 ? '' : 's'}`}
               </button>
             </div>
           ) : (
-            <p className="text-center text-gray-600 mt-auto">Waiting for {leader?.name ?? 'the leader'} to start…</p>
+            <p className="text-center text-gray-600 mt-auto">Waiting for {leader?.name ?? 'the leader'} to pick categories and start…</p>
           )}
           {actionError && <p className="text-red-600 text-center">{actionError}</p>}
           <button onClick={leave} disabled={busy} className="text-sm text-gray-500 underline self-center">
@@ -375,6 +429,7 @@ export function DoodlePlayer() {
         {me.isLeader && finished && (
           <div className="rounded-3xl bg-white p-5 shadow-sm flex flex-col gap-4 max-w-md w-full self-center">
             <p className="text-center font-bold text-lg">That&rsquo;s every sketchbook!</p>
+            <CategoryPicker value={categories} onChange={setCategories} />
             <TimerPicker value={chosenTimer} onChange={setTimer} />
             <button onClick={startGame} disabled={busy || state.players.length < MIN_PLAYERS} className="w-full py-4 rounded-2xl bg-green-600 text-white font-bold text-xl disabled:opacity-40">
               Play again

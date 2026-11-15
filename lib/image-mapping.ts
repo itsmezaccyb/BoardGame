@@ -18,12 +18,6 @@ export const imageUrls: Record<string, string> = {
   '/images/catan_4_.jpg': '/images/catan_4_.jpg',
   '/images/catan_6_.jpeg': '/images/catan_6_.jpeg',
 
-  // Ticket to Ride
-  '/images/ticket_to_ride.jpg': SUPABASE_URL ? `${SUPABASE_URL}/storage/v1/object/public/codenames-images/assets/ticket_to_ride.jpg` : '/images/ticket_to_ride.jpg',
-
-  // Chess
-  '/images/Wood.jpg': SUPABASE_URL ? `${SUPABASE_URL}/storage/v1/object/public/codenames-images/assets/Wood.jpg` : '/images/Wood.jpg',
-
   // Other images (fallback to local if Supabase not configured)
   '/images/catan_boat_generic_3-1.png': SUPABASE_URL ? `${SUPABASE_URL}/storage/v1/object/public/codenames-images/assets/catan_boat_generic_3-1.png` : '/images/catan_boat_generic_3-1.png',
   '/images/catan_boat_wheat_2-1.png': SUPABASE_URL ? `${SUPABASE_URL}/storage/v1/object/public/codenames-images/assets/catan_boat_wheat_2-1.png` : '/images/catan_boat_wheat_2-1.png',

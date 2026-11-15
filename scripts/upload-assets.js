@@ -29,10 +29,6 @@ const keyImages = [
   // 'catan_desert.png',
   // 'catan_water.png',
   // 'catan_boat.png',
-
-  // Other game images
-  'ticket_to_ride.jpg',
-  'Wood.jpg'
 ];
 
 async function uploadAssets() {

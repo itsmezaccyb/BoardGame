@@ -7,20 +7,6 @@ export default function Home() {
 
             <div className="grid grid-cols-2 gap-8 max-w-4xl">
                 <Link
-                    href="/chess"
-                    className="flex flex-col items-center justify-center p-8 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer border-2 border-gray-300 hover:border-gray-400"
-                >
-                    <div className="text-4xl mb-4">♟️</div>
-                    <span className="text-2xl font-semibold text-gray-800">Chess</span>
-                </Link>
-                <Link
-                    href="/ticket-to-ride"
-                    className="flex flex-col items-center justify-center p-8 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer border-2 border-gray-300 hover:border-gray-400"
-                >
-                    <div className="text-4xl mb-4">🚂</div>
-                    <span className="text-2xl font-semibold text-gray-800">Ticket to Ride</span>
-                </Link>
-                <Link
                     href="/catan"
                     className="flex flex-col items-center justify-center p-8 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer border-2 border-gray-300 hover:border-gray-400"
                 >

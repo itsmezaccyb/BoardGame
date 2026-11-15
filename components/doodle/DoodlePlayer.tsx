@@ -438,6 +438,8 @@ export function DoodlePlayer() {
           </div>
         )}
         {actionError && <p className="text-red-600 text-center">{actionError}</p>}
+        {/* Room for the page buttons pinned to the bottom of the screen */}
+        {me.isLeader && <div className="h-24 shrink-0" aria-hidden />}
       </div>
     </Shell>
   );

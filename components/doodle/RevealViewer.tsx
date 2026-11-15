@@ -18,7 +18,7 @@ interface Props {
 function Page({ code, entry, large, faded }: { code: string; entry: RevealStep; large?: boolean; faded?: boolean }) {
   const src = useDrawing(code, entry.kind === 'drawing' ? entry.entryId : undefined);
   const caption =
-    entry.kind === 'prompt' ? 'The word was' : entry.kind === 'drawing' ? `${entry.authorName ?? 'Someone'} drew` : `${entry.authorName ?? 'Someone'} guessed`;
+    entry.kind === 'prompt' ? 'The original word was' : entry.kind === 'drawing' ? `${entry.authorName ?? 'Someone'} drew` : `${entry.authorName ?? 'Someone'} guessed`;
 
   return (
     <div className={`flex flex-col items-center gap-3 w-full ${faded ? 'opacity-60' : ''}`}>
@@ -52,11 +52,16 @@ function Page({ code, entry, large, faded }: { code: string; entry: RevealStep; 
 }
 
 export function RevealViewer({ code, reveal, leaderName, onNavigate, large }: Props) {
-  const { book, step, bookCount, steps, ownerName } = reveal;
-  const lastStep = steps.length - 1;
-  const entry = steps[Math.min(step, lastStep)];
-  const previous = step > 0 ? steps[step - 1] : undefined;
-  const atEndOfBook = step >= lastStep;
+  const { book, bookCount, steps, ownerName } = reveal;
+  // Pages run drawing → guess → … and the original word comes last, so the
+  // table finds out how far it drifted only at the end of each book.
+  // reveal.step is the page index into this order, not the entry's step.
+  const pages = steps.length > 1 ? [...steps.slice(1), steps[0]] : steps;
+  const lastPage = pages.length - 1;
+  const page = Math.min(reveal.step, lastPage);
+  const entry = pages[page];
+  const previous = page > 0 ? pages[page - 1] : undefined;
+  const atEndOfBook = page >= lastPage;
   const atVeryEnd = atEndOfBook && book >= bookCount - 1;
 
   // Load the whole book's drawings up front so flipping is instant
@@ -66,13 +71,13 @@ export function RevealViewer({ code, reveal, leaderName, onNavigate, large }: Pr
 
   const next = () => {
     if (!onNavigate) return;
-    if (!atEndOfBook) onNavigate(book, step + 1);
+    if (!atEndOfBook) onNavigate(book, page + 1);
     else if (!atVeryEnd) onNavigate(book + 1, 0);
   };
   const prev = () => {
     if (!onNavigate) return;
-    if (step > 0) onNavigate(book, step - 1);
-    else if (book > 0) onNavigate(book - 1, 0);
+    if (page > 0) onNavigate(book, page - 1);
+    else if (book > 0) onNavigate(book - 1, lastPage);
   };
 
   // Arrow keys / space for a leader on a computer
@@ -93,8 +98,8 @@ export function RevealViewer({ code, reveal, leaderName, onNavigate, large }: Pr
   });
 
   if (!entry) return null;
-  const first = steps[0];
-  const final = steps[lastStep];
+  const word = steps[0];
+  const finalEntry = steps[steps.length - 1];
 
   return (
     <div className="flex flex-col items-center gap-5 w-full">
@@ -104,11 +109,11 @@ export function RevealViewer({ code, reveal, leaderName, onNavigate, large }: Pr
         </p>
         <h2 className={`font-extrabold text-gray-900 ${large ? 'text-6xl' : 'text-2xl'}`}>{ownerName}&rsquo;s sketchbook</h2>
         <div className="flex justify-center gap-1.5 mt-3">
-          {steps.map((s) => (
+          {pages.map((s, i) => (
             <span
-              key={s.step}
+              key={s.entryId}
               className={`rounded-full transition-all ${large ? 'h-3' : 'h-2'} ${
-                s.step === step ? `bg-gray-900 ${large ? 'w-10' : 'w-6'}` : s.step < step ? `bg-gray-500 ${large ? 'w-3' : 'w-2'}` : `bg-gray-300 ${large ? 'w-3' : 'w-2'}`
+                i === page ? `bg-gray-900 ${large ? 'w-10' : 'w-6'}` : i < page ? `bg-gray-500 ${large ? 'w-3' : 'w-2'}` : `bg-gray-300 ${large ? 'w-3' : 'w-2'}`
               }`}
             />
           ))}
@@ -122,34 +127,37 @@ export function RevealViewer({ code, reveal, leaderName, onNavigate, large }: Pr
 
       {atEndOfBook && steps.length > 1 && (
         <div className={`rounded-2xl bg-gradient-to-r from-amber-100 to-sky-100 px-6 py-4 text-center ${large ? 'text-3xl' : 'text-base'}`}>
-          Started as <b>{first.text}</b>
-          {final.kind === 'guess' ? (
+          Started as <b>{word.text}</b>
+          {finalEntry.kind === 'guess' ? (
             <>
               {' '}
-              → ended as <b>{final.text}</b>
+              → ended as <b>{finalEntry.text}</b>
             </>
           ) : (
-            ' → ended as that drawing'
+            ' → ended as that last drawing'
           )}
         </div>
       )}
 
       {onNavigate ? (
-        <div className="flex gap-3 w-full max-w-md">
-          <button
-            onClick={prev}
-            disabled={book === 0 && step === 0}
-            className="flex-1 py-4 rounded-2xl bg-gray-200 text-gray-800 font-bold text-lg disabled:opacity-40"
-          >
-            ← Back
-          </button>
-          <button
-            onClick={next}
-            disabled={atVeryEnd}
-            className="flex-[2] py-4 rounded-2xl bg-violet-600 text-white font-bold text-lg disabled:opacity-40"
-          >
-            {atEndOfBook ? (atVeryEnd ? 'That was the last one' : 'Next sketchbook →') : 'Next page →'}
-          </button>
+        // Pinned to the bottom so the buttons never move between pages
+        <div className="fixed inset-x-0 bottom-0 z-20 bg-white/90 backdrop-blur border-t border-gray-200 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex gap-3 w-full max-w-md">
+            <button
+              onClick={prev}
+              disabled={book === 0 && page === 0}
+              className="w-28 shrink-0 py-4 rounded-2xl bg-gray-200 text-gray-800 font-bold text-lg disabled:opacity-40"
+            >
+              ← Back
+            </button>
+            <button
+              onClick={next}
+              disabled={atVeryEnd}
+              className="flex-1 py-4 rounded-2xl bg-violet-600 text-white font-bold text-lg disabled:opacity-40"
+            >
+              {atEndOfBook ? (atVeryEnd ? 'That was the last one' : 'Next sketchbook →') : page === lastPage - 1 ? 'Reveal the word →' : 'Next page →'}
+            </button>
+          </div>
         </div>
       ) : (
         !large && <p className="text-gray-500 text-sm">{leaderName ?? 'The leader'} is flipping the pages</p>

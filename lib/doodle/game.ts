@@ -1,8 +1,8 @@
 /**
  * Doodle Relay — pure game logic shared by the API routes and the UI.
  *
- * Every player owns one sketchbook, which starts with a secret prompt (step 0).
- * In round r (1-based) the book owned by seat b is held by seat (b + r) % N.
+ * Every player owns one sketchbook. Round 0 is the writing round: each player
+ * types the word that starts their own book (step 0). In round r the book owned by seat b is held by seat (b + r) % N.
  * Odd rounds are drawings, even rounds are guesses. With an even number of
  * players the book makes one extra hop so it lands back with its owner for
  * the final guess; with an odd number it already ends on a guess.
@@ -52,6 +52,7 @@ export function pickPrompts<T>(pool: readonly T[], count: number): T[] {
 }
 
 export const NO_GUESS = '(no guess)';
+export const MAX_PROMPT_CHARS = 60;
 export const BLANK_DRAWING = '';
 
 // ---- Shapes returned by GET /api/doodle-relay/state ----
@@ -65,7 +66,7 @@ export interface PublicPlayer {
 }
 
 export interface Task {
-  kind: 'drawing' | 'guess';
+  kind: 'prompt' | 'drawing' | 'guess';
   round: number;
   book: number;
   /** For a drawing: the text to draw. */

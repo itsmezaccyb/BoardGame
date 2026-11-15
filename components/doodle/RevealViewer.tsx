@@ -18,7 +18,7 @@ interface Props {
 function Page({ code, entry, large, faded }: { code: string; entry: RevealStep; large?: boolean; faded?: boolean }) {
   const src = useDrawing(code, entry.kind === 'drawing' ? entry.entryId : undefined);
   const caption =
-    entry.kind === 'prompt' ? 'The original word was' : entry.kind === 'drawing' ? `${entry.authorName ?? 'Someone'} drew` : `${entry.authorName ?? 'Someone'} guessed`;
+    entry.kind === 'prompt' ? `${entry.authorName ?? 'Someone'} started with` : entry.kind === 'drawing' ? `${entry.authorName ?? 'Someone'} drew` : `${entry.authorName ?? 'Someone'} guessed`;
 
   return (
     <div className={`flex flex-col items-center gap-3 w-full ${faded ? 'opacity-60' : ''}`}>

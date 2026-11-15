@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MIN_PLAYERS, NO_GUESS, TIMER_OPTIONS, type StateResponse, type Task } from '@/lib/doodle/game';
-import { ALL_CATEGORY_IDS, CATEGORIES } from '@/lib/doodle/prompts';
+import { MAX_PROMPT_CHARS, MIN_PLAYERS, NO_GUESS, TIMER_OPTIONS, pickPrompts, type StateResponse, type Task } from '@/lib/doodle/game';
+import { promptsFor } from '@/lib/doodle/prompts';
 import { DrawingCanvas, type DrawingCanvasHandle } from './DrawingCanvas';
 import { RevealViewer } from './RevealViewer';
-import { CATEGORIES_KEY, api, storageGet, storageSet, tokenKey, useCountdown, useDoodleState, useDrawing } from './useDoodle';
+import { api, storageGet, storageSet, tokenKey, useCountdown, useDoodleState, useDrawing } from './useDoodle';
 
 function Shell({ children, wide, fit }: { children: React.ReactNode; wide?: boolean; fit?: boolean }) {
   // `fit` locks the page to the screen height so the drawing pad shrinks to
@@ -33,42 +33,6 @@ function TimerPicker({ value, onChange }: { value: number; onChange: (v: number)
             {t === 0 ? 'Off' : `${t}s`}
           </button>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function CategoryPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
-  const allOn = value.length === ALL_CATEGORY_IDS.length;
-  const toggle = (id: string) => {
-    const next = value.includes(id) ? value.filter((v) => v !== id) : [...value, id];
-    if (next.length) onChange(next); // keep at least one category picked
-  };
-  return (
-    <div>
-      <div className="flex items-baseline justify-between mb-2">
-        <p className="text-sm font-semibold text-gray-700">Word categories</p>
-        <button type="button" onClick={() => onChange(allOn ? [ALL_CATEGORY_IDS[0]] : [...ALL_CATEGORY_IDS])} className="text-sm text-violet-700 font-semibold">
-          {allOn ? 'Clear' : 'Pick all'}
-        </button>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {CATEGORIES.map((c) => {
-          const on = value.includes(c.id);
-          return (
-            <button
-              key={c.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggle(c.id)}
-              className={`px-3 py-2 rounded-full text-sm font-semibold border-2 transition-colors ${
-                on ? 'border-violet-600 bg-violet-600 text-white' : 'border-gray-200 bg-white text-gray-600'
-              }`}
-            >
-              {c.emoji} {c.name}
-            </button>
-          );
-        })}
       </div>
     </div>
   );
@@ -129,7 +93,8 @@ function TaskView({
     setSending(true);
     setError(null);
     try {
-      await onSubmit(task.kind === 'drawing' ? canvasRef.current?.getImage() ?? '' : guess.trim() || NO_GUESS);
+      // An empty starting word is swapped for a random one by the server
+      await onSubmit(task.kind === 'drawing' ? canvasRef.current?.getImage() ?? '' : task.kind === 'guess' ? guess.trim() || NO_GUESS : guess.trim());
     } catch (e) {
       sentRef.current = false;
       setError(e instanceof Error ? e.message : 'Could not send, try again');
@@ -143,6 +108,46 @@ function TaskView({
     if (secondsLeft === 0) submit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secondsLeft]);
+
+  if (task.kind === 'prompt') {
+    return (
+      <form
+        className="flex flex-col flex-1 gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-amber-600">Write a word</p>
+            <p className="text-gray-600">Type something for the next person to draw. Keep it secret!</p>
+          </div>
+          <CountdownBadge seconds={secondsLeft} />
+        </div>
+        <input
+          value={guess}
+          onChange={(e) => setGuess(e.target.value)}
+          maxLength={MAX_PROMPT_CHARS}
+          placeholder="e.g. Penguin on vacation"
+          autoComplete="off"
+          autoFocus
+          className="w-full px-4 py-4 rounded-2xl border-2 border-gray-200 text-xl focus:border-amber-500 outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => setGuess(pickPrompts(promptsFor(undefined), 1)[0])}
+          className="self-start px-4 py-2 rounded-xl bg-white ring-1 ring-gray-300 text-gray-700 font-semibold"
+        >
+          🎲 Give me an idea
+        </button>
+        {error && <p className="text-red-600 text-center text-sm">{error}</p>}
+        <button type="submit" disabled={sending || !guess.trim()} className="w-full py-4 rounded-2xl bg-amber-500 text-white font-bold text-xl disabled:opacity-50 mt-auto">
+          {sending ? 'Sending…' : 'Pass it on'}
+        </button>
+      </form>
+    );
+  }
 
   if (task.kind === 'drawing') {
     return (
@@ -210,22 +215,6 @@ export function DoodlePlayer() {
   const [token, setToken] = useState<string | null>(null);
   const [checkedToken, setCheckedToken] = useState(false);
   const [timer, setTimer] = useState<number | null>(null);
-  const [categories, setCategoriesState] = useState<string[]>(ALL_CATEGORY_IDS);
-  const setCategories = (ids: string[]) => {
-    setCategoriesState(ids);
-    storageSet(CATEGORIES_KEY, JSON.stringify(ids));
-  };
-
-  // Remember the leader's last category picks between games
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(storageGet(CATEGORIES_KEY) || 'null');
-      const valid = Array.isArray(saved) ? saved.filter((id) => ALL_CATEGORY_IDS.includes(id)) : [];
-      if (valid.length) setCategoriesState(valid);
-    } catch {
-      /* ignore bad saved value */
-    }
-  }, []);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -290,7 +279,7 @@ export function DoodlePlayer() {
 
   const leader = state.players.find((p) => p.isLeader);
   const chosenTimer = timer ?? state.timerSeconds;
-  const startGame = () => run(() => api('start', { code, token, timerSeconds: chosenTimer, categories }));
+  const startGame = () => run(() => api('start', { code, token, timerSeconds: chosenTimer }));
   const leave = () =>
     run(async () => {
       if (!confirm('Leave this game?')) return;
@@ -328,14 +317,13 @@ export function DoodlePlayer() {
           </div>
           {me.isLeader ? (
             <div className="flex flex-col gap-5 mt-auto">
-              <CategoryPicker value={categories} onChange={setCategories} />
               <TimerPicker value={chosenTimer} onChange={setTimer} />
               <button onClick={startGame} disabled={!enough || busy} className="w-full py-4 rounded-2xl bg-green-600 text-white font-bold text-xl disabled:opacity-40">
                 {enough ? 'Start game' : `Need ${MIN_PLAYERS - state.players.length} more player${MIN_PLAYERS - state.players.length === 1 ? '' : 's'}`}
               </button>
             </div>
           ) : (
-            <p className="text-center text-gray-600 mt-auto">Waiting for {leader?.name ?? 'the leader'} to pick categories and start…</p>
+            <p className="text-center text-gray-600 mt-auto">Waiting for {leader?.name ?? 'the leader'} to start…</p>
           )}
           {actionError && <p className="text-red-600 text-center">{actionError}</p>}
           <button onClick={leave} disabled={busy} className="text-sm text-gray-500 underline self-center">
@@ -349,10 +337,11 @@ export function DoodlePlayer() {
   // ---------------- Playing ----------------
   if (state.status === 'playing') {
     const task = state.task;
-    const isDrawRound = state.round % 2 === 1;
     const roundLabel = (
       <p className="text-center text-sm text-gray-500 mb-2 shrink-0">
-        Round {state.round} of {state.totalRounds} · {isDrawRound ? 'Drawing' : 'Guessing'}
+        {state.round === 0
+          ? 'Everyone is writing a word'
+          : `Round ${state.round} of ${state.totalRounds} · ${state.round % 2 === 1 ? 'Drawing' : 'Guessing'}`}
       </p>
     );
 
@@ -397,7 +386,7 @@ export function DoodlePlayer() {
           {me.isLeader && waitingOn.length > 0 && (
             <button
               onClick={() => {
-                if (confirm(`Move on without ${waitingOn.map((p) => p.name).join(', ')}? They'll pass along a blank page.`)) {
+                if (confirm(`Move on without ${waitingOn.map((p) => p.name).join(', ')}? ${state.round === 0 ? "They'll get a random word." : "They'll pass along a blank page."}`)) {
                   run(() => api('skip', { code, token, round: state.round }));
                 }
               }}
@@ -429,7 +418,6 @@ export function DoodlePlayer() {
         {me.isLeader && finished && (
           <div className="rounded-3xl bg-white p-5 shadow-sm flex flex-col gap-4 max-w-md w-full self-center">
             <p className="text-center font-bold text-lg">That&rsquo;s every sketchbook!</p>
-            <CategoryPicker value={categories} onChange={setCategories} />
             <TimerPicker value={chosenTimer} onChange={setTimer} />
             <button onClick={startGame} disabled={busy || state.players.length < MIN_PLAYERS} className="w-full py-4 rounded-2xl bg-green-600 text-white font-bold text-xl disabled:opacity-40">
               Play again

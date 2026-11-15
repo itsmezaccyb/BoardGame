@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db as supabase } from '@/lib/doodle/db';
-import { MIN_PLAYERS, TIMER_OPTIONS, pickPrompts, totalRounds } from '@/lib/doodle/game';
-import { promptsFor } from '@/lib/doodle/prompts';
+import { MIN_PLAYERS, TIMER_OPTIONS, totalRounds } from '@/lib/doodle/game';
 import { ApiError, handle, loadPlayers, loadSession, requireLeader } from '@/lib/doodle/server';
 
 export const dynamic = 'force-dynamic';
 
-// POST /api/doodle-relay/start  { code, token, timerSeconds, categories }
-// categories: ids from lib/doodle/prompts; missing or empty means all of them.
-// Starts a game from the lobby, or a new game after a reveal.
+// POST /api/doodle-relay/start  { code, token, timerSeconds }
+// Starts a game from the lobby, or a new game after a reveal. It opens on
+// round 0, where everyone writes the word that starts their own sketchbook.
 export async function POST(request: NextRequest) {
   return handle(async () => {
-    const { code, token, timerSeconds, categories } = await request.json();
+    const { code, token, timerSeconds } = await request.json();
     const session = await loadSession(code);
     const players = await loadPlayers(session.id);
     requireLeader(players, token);
@@ -22,29 +21,13 @@ export async function POST(request: NextRequest) {
     const timer = (TIMER_OPTIONS as readonly number[]).includes(timerSeconds) ? timerSeconds : session.timer_seconds;
     const gameNumber = session.game_number + 1;
     const seatOrder = players.map((p) => p.id);
-    const prompts = pickPrompts(promptsFor(Array.isArray(categories) ? categories : undefined), seatOrder.length);
-
-    // Write the prompts before flipping the session to playing, so no one
-    // ever sees a round without its starting words.
-    const { error: entryError } = await supabase.from('doodle_entries').insert(
-      prompts.map((text, book) => ({
-        session_id: session.id,
-        game_number: gameNumber,
-        book_index: book,
-        step: 0,
-        kind: 'prompt',
-        author_player_id: null,
-        content: text,
-      })),
-    );
-    if (entryError) throw entryError;
 
     const { data, error } = await supabase
       .from('doodle_sessions')
       .update({
         status: 'playing',
         game_number: gameNumber,
-        round: 1,
+        round: 0,
         total_rounds: totalRounds(seatOrder.length),
         timer_seconds: timer,
         round_started_at: new Date().toISOString(),

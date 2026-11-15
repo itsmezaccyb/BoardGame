@@ -53,7 +53,9 @@ export function DoodleTable() {
       {state.status === 'playing' && (
         <div className="text-center">
           <p className="text-5xl font-bold">
-            Round {state.round} of {state.totalRounds}: {state.round % 2 === 1 ? 'Drawing' : 'Guessing'}
+            {state.round === 0
+              ? 'Everyone is writing a secret word'
+              : `Round ${state.round} of ${state.totalRounds}: ${state.round % 2 === 1 ? 'Drawing' : 'Guessing'}`}
           </p>
           {secondsLeft !== null && <p className={`font-mono text-6xl mt-4 ${secondsLeft <= 10 ? 'text-red-400' : 'text-gray-300'}`}>{secondsLeft}s</p>}
         </div>

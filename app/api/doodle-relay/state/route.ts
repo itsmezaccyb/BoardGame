@@ -41,9 +41,10 @@ export async function GET(request: NextRequest) {
     if (session.status === 'playing' && me && me.seat >= 0) {
       const n = session.seat_order.length;
       const book = bookForSeat(me.seat, session.round, n);
-      const kind = kindForStep(session.round) as 'drawing' | 'guess';
-      // Drawing rounds read the previous text; guess rounds the previous drawing
-      const { data: source, error } = await supabase
+      const kind = kindForStep(session.round);
+      // The writing round has nothing to read. Drawing rounds read the
+      // previous text; guess rounds the previous drawing.
+      const { data: source, error } = kind === 'prompt' ? { data: null, error: null } : await supabase
         .from('doodle_entries')
         .select(kind === 'drawing' ? 'id, content' : 'id')
         .eq('session_id', session.id)

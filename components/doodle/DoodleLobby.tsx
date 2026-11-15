@@ -78,7 +78,7 @@ export function DoodleLobby() {
           <div className="text-6xl mb-2">✏️</div>
           <h1 className="text-4xl font-extrabold text-gray-900">Doodle Relay</h1>
           <p className="text-gray-600 mt-2">
-            Everyone gets a secret word. Draw it, pass it, guess what the last person drew, pass it again. Then flip through every sketchbook together and
+            Everyone writes a secret word. The next person draws it, the next guesses the drawing, and on it goes. Then flip through every sketchbook together and
             see how far it drifted.
           </p>
         </div>

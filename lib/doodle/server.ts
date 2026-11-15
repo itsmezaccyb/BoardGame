@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db as supabase } from '@/lib/doodle/db';
-import { NO_GUESS, BLANK_DRAWING, kindForStep } from './game';
+import { NO_GUESS, BLANK_DRAWING, kindForStep, pickPrompts } from './game';
+import { promptsFor } from './prompts';
 
 export interface SessionRow {
   id: string;
@@ -128,6 +129,8 @@ export async function fillMissingAndAdvance(session: SessionRow): Promise<void> 
   const submitted = await submittedThisRound(session);
   const n = session.seat_order.length;
   const kind = kindForStep(session.round);
+  // Anyone who didn't write a starting word gets a random one
+  const randomWords = pickPrompts(promptsFor(undefined), n);
   const rows = session.seat_order
     .map((playerId, seat) => ({ playerId, seat }))
     .filter(({ playerId }) => !submitted.has(playerId))
@@ -138,7 +141,7 @@ export async function fillMissingAndAdvance(session: SessionRow): Promise<void> 
       step: session.round,
       kind,
       author_player_id: playerId,
-      content: kind === 'guess' ? NO_GUESS : BLANK_DRAWING,
+      content: kind === 'prompt' ? randomWords[seat] : kind === 'guess' ? NO_GUESS : BLANK_DRAWING,
     }));
   if (rows.length > 0) {
     const { error } = await supabase

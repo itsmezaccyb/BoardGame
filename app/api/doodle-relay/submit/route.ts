@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db as supabase } from '@/lib/doodle/db';
-import { NO_GUESS, bookForSeat, kindForStep } from '@/lib/doodle/game';
+import { MAX_PROMPT_CHARS, NO_GUESS, bookForSeat, kindForStep, pickPrompts } from '@/lib/doodle/game';
+import { promptsFor } from '@/lib/doodle/prompts';
 import { ApiError, advanceIfComplete, handle, loadPlayers, loadSession, requirePlayer } from '@/lib/doodle/server';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,9 @@ export async function POST(request: NextRequest) {
 
     const kind = kindForStep(session.round);
     let value = typeof content === 'string' ? content : '';
-    if (kind === 'guess') {
+    if (kind === 'prompt') {
+      value = value.trim().slice(0, MAX_PROMPT_CHARS) || pickPrompts(promptsFor(undefined), 1)[0];
+    } else if (kind === 'guess') {
       value = value.trim().slice(0, 80) || NO_GUESS;
     } else if (value && (!value.startsWith('data:image/') || value.length > MAX_DRAWING_CHARS)) {
       throw new ApiError(400, 'That drawing could not be saved');

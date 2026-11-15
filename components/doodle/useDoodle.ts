@@ -8,7 +8,6 @@ const API = '/api/doodle-relay';
 export const tokenKey = (code: string) => `doodle-relay:token:${code.toUpperCase()}`;
 export const NAME_KEY = 'doodle-relay:name';
 export const LAST_CODE_KEY = 'doodle-relay:last-code';
-export const CATEGORIES_KEY = 'doodle-relay:categories';
 
 export function storageGet(key: string): string | null {
   try {

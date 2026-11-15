@@ -27,6 +27,13 @@ export default function Home() {
                     <div className="text-4xl mb-4">🦎</div>
                     <span className="text-2xl font-semibold text-gray-800">Chameleon</span>
                 </Link>
+                <Link
+                    href="/doodle-relay"
+                    className="flex flex-col items-center justify-center p-8 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer border-2 border-gray-300 hover:border-gray-400"
+                >
+                    <div className="text-4xl mb-4">✏️</div>
+                    <span className="text-2xl font-semibold text-gray-800">Doodle Relay</span>
+                </Link>
             </div>
         </main>
     );

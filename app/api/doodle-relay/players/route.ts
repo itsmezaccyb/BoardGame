@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { supabase } from '@/lib/supabase';
+import { db as supabase } from '@/lib/doodle/db';
 import { MAX_PLAYERS } from '@/lib/doodle/game';
 import { ApiError, handle, loadPlayers, loadSession, requirePlayer } from '@/lib/doodle/server';
 

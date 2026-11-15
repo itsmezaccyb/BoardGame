@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { supabase } from '@/lib/supabase';
+import { db as supabase } from '@/lib/doodle/db';
 import { generateCode } from '@/lib/doodle/game';
 import { ApiError, handle } from '@/lib/doodle/server';
 

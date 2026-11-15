@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { db as supabase } from '@/lib/doodle/db';
 import { MIN_PLAYERS, TIMER_OPTIONS, pickPrompts, totalRounds } from '@/lib/doodle/game';
 import { PROMPTS } from '@/lib/doodle/prompts';
 import { ApiError, handle, loadPlayers, loadSession, requireLeader } from '@/lib/doodle/server';

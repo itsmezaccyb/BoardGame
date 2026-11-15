@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { db as supabase } from '@/lib/doodle/db';
 import { NO_GUESS, BLANK_DRAWING, kindForStep } from './game';
 
 export interface SessionRow {

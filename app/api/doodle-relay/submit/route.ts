@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { db as supabase } from '@/lib/doodle/db';
 import { NO_GUESS, bookForSeat, kindForStep } from '@/lib/doodle/game';
 import { ApiError, advanceIfComplete, handle, loadPlayers, loadSession, requirePlayer } from '@/lib/doodle/server';
 

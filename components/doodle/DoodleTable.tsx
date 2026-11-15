@@ -17,7 +17,7 @@ export function DoodleTable() {
 
   if (!code || (!state && error)) {
     return (
-      <main className="h-dvh w-full flex flex-col items-center justify-center gap-4 bg-gray-950 text-white">
+      <main className="no-select h-dvh w-full flex flex-col items-center justify-center gap-4 bg-gray-950 text-white">
         <p className="text-2xl">{error || 'No game code given.'}</p>
         <Link href="/doodle-relay" className="underline text-violet-300">
           Back to Doodle Relay
@@ -26,7 +26,7 @@ export function DoodleTable() {
     );
   }
   if (!state) {
-    return <main className="h-dvh w-full bg-gray-950" />;
+    return <main className="no-select h-dvh w-full bg-gray-950" />;
   }
 
   const seated = state.players.filter((p) => state.status === 'lobby' || p.seat >= 0).sort((a, b) => a.seat - b.seat);
@@ -34,7 +34,7 @@ export function DoodleTable() {
 
   if (state.status === 'reveal' && state.reveal) {
     return (
-      <main className="h-dvh w-full overflow-y-auto bg-gradient-to-b from-violet-50 to-amber-50">
+      <main className="no-select h-dvh w-full overflow-y-auto bg-gradient-to-b from-violet-50 to-amber-50">
         <div className="min-h-full flex flex-col items-center justify-center px-10 py-8">
           <RevealViewer code={code} reveal={state.reveal} leaderName={leader?.name} large />
           <p className="text-gray-500 text-xl mt-6">{leader?.name ?? 'The leader'} flips the pages from their device</p>
@@ -44,7 +44,7 @@ export function DoodleTable() {
   }
 
   return (
-    <main className="h-dvh w-full overflow-hidden bg-gray-950 text-white flex flex-col items-center justify-center gap-12 px-10">
+    <main className="no-select h-dvh w-full overflow-hidden bg-gray-950 text-white flex flex-col items-center justify-center gap-12 px-10">
       <div className="text-center">
         <p className="text-3xl text-gray-400">Join at <span className="text-white font-semibold">{joinUrl}</span> with code</p>
         <p className="font-mono text-[10rem] leading-none font-extrabold tracking-[0.2em] text-violet-400 mt-4">{code}</p>

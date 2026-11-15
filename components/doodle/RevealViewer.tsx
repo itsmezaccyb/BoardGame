@@ -32,7 +32,7 @@ function Page({ code, entry, large, faded }: { code: string; entry: RevealStep; 
             <div className="animate-pulse text-gray-400">Loading…</div>
           ) : src ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt={`Drawing by ${entry.authorName ?? 'someone'}`} className="w-full h-full object-contain" />
+            <img src={src} alt={`Drawing by ${entry.authorName ?? 'someone'}`} className="w-full h-full object-contain" draggable={false} onContextMenu={(e) => e.preventDefault()} />
           ) : (
             <p className="text-gray-400 italic">(left blank)</p>
           )}

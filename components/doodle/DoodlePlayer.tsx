@@ -13,7 +13,7 @@ function Shell({ children, wide, fit }: { children: React.ReactNode; wide?: bool
   // `fit` locks the page to the screen height so the drawing pad shrinks to
   // leave room for its tools and the Done button, instead of scrolling.
   return (
-    <main className="h-dvh w-full overflow-y-auto bg-gradient-to-b from-violet-50 to-amber-50">
+    <main className="no-select h-dvh w-full overflow-y-auto bg-gradient-to-b from-violet-50 to-amber-50">
       <div className={`mx-auto w-full ${wide ? 'max-w-4xl' : 'max-w-xl'} px-4 ${fit ? 'py-3 h-full' : 'py-4 min-h-full'} flex flex-col`}>{children}</div>
     </main>
   );
@@ -188,7 +188,7 @@ function TaskView({
           <div className="animate-pulse text-gray-400">Loading drawing…</div>
         ) : drawing ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={drawing} alt="Drawing to guess" className="w-full h-full object-contain" />
+          <img src={drawing} alt="Drawing to guess" className="w-full h-full object-contain" draggable={false} onContextMenu={(e) => e.preventDefault()} />
         ) : (
           <p className="text-gray-400 italic px-6 text-center">They left the page blank. Make something up!</p>
         )}

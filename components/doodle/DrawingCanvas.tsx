@@ -167,6 +167,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, { disabled?: boolea
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onContextMenu={(e) => e.preventDefault()}
           className="rounded-2xl shadow-lg bg-white ring-1 ring-black/10"
           style={{
             width: displaySize || '100%',

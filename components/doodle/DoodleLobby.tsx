@@ -69,7 +69,7 @@ export function DoodleLobby() {
   };
 
   return (
-    <main className="h-dvh w-full overflow-y-auto bg-gradient-to-b from-violet-50 to-amber-50">
+    <main className="no-select h-dvh w-full overflow-y-auto bg-gradient-to-b from-violet-50 to-amber-50">
       <div className="mx-auto max-w-md px-4 py-6 flex flex-col gap-6">
         <Link href="/" className="text-sm text-gray-500">
           ← Games
